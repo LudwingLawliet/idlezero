@@ -1,0 +1,86 @@
+# Apertura clásica de Feudal a 21 de población (20 aldeanos + explorador),
+# la base de Scouts / Archers. Orden manual de referencia para comparar con el
+# optimizador (Fase 3: "Feudal lo antes posible" debe ser igual o mejor).
+# Fuente de la estructura: guías comunitarias de 21-pop scouts; aproximada.
+name = "Feudal a 21 de población"
+map = "arabia_neutra"
+default_pool = "forest"
+
+[auto]
+builders = "forest"
+houses = 3
+lure_ahead = 100
+
+[[start]]
+villagers = 2
+build = "house"
+then = "sheep"
+
+[[start]]
+villagers = 1
+build = "house"
+then = "sheep"
+
+[[villager]]
+n = 4
+to = 6
+pool = "sheep"
+
+[[villager]]
+n = 7
+build = "lumber_camp"
+then = "forest"
+
+[[villager]]
+n = 8
+to = 10
+pool = "forest"
+
+[[villager]]
+n = 11
+pool = "boar"
+
+[[villager]]
+n = 12
+build = "mill"
+at = "berries"
+then = "berries"
+
+[[villager]]
+n = 13
+to = 14
+pool = "berries"
+
+[[villager]]
+n = 15
+to = 16
+pool = "boar"
+
+[[villager]]
+n = 17
+to = 20
+pool = "forest"
+
+[[step]]
+when = { pool_exhausted = "sheep" }
+from = "sheep"
+to = "boar"
+
+[[step]]
+when = { pool_exhausted = "boar" }
+from = "boar"
+to = "deer"
+
+[[step]]
+when = { pool_exhausted = "deer" }
+from = "deer"
+to = "farms"
+
+[[step]]
+when = { pool_exhausted = "berries" }
+from = "berries"
+to = "farms"
+
+[[step]]
+when = { pop = 21 }
+research = "feudal_age"

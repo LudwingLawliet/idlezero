@@ -61,3 +61,11 @@ reached = "{age} reached"
 tc_idle = "TC idle"
 villager_idle = "idle villagers (villager·s)"
 gathered = "gathered"
+
+[goals]
+feudal = "Feudal Age ASAP"
+castle = "Castle Age ASAP"
+imperial = "Imperial Age ASAP"
+villagers_30_feudal = "30 villagers in Feudal"
+archers_20 = "20 archers with Fletching"
+knights_10 = "10 knights"

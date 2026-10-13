@@ -3,6 +3,11 @@ name = "aoe2-opt"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Optimizador de órdenes de construcción (búsqueda en haz + búsqueda local)"
 
 [dependencies]
 aoe2-data.workspace = true
+aoe2-sim = { path = "../aoe2-sim" }
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true

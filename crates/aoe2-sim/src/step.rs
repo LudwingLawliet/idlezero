@@ -25,8 +25,11 @@ pub struct Sim<'a> {
     /// decisión externa (el optimizador) en lugar de ir al pool por defecto.
     external: bool,
     decision: Option<u32>,
+    born_before_tick: u32,
     max_villagers: Option<u32>,
     builders_pool: usize,
+    /// Puntos de entrega encargados por `auto.drop_sites` sin colocar: (edificio, pool).
+    pending_drop_sites: Vec<(u32, usize)>,
     fallback: Vec<(usize, usize)>,
     pub state: GameState,
     pools: Vec<String>,
@@ -182,8 +185,10 @@ impl<'a> Sim<'a> {
             sc,
             external: false,
             decision: None,
+            born_before_tick: 0,
             max_villagers: order.max_villagers,
             builders_pool,
+            pending_drop_sites: Vec::new(),
             fallback,
             state: GameState {
                 time: 0,
@@ -207,6 +212,7 @@ impl<'a> Sim<'a> {
                 tc: None,
                 research: Vec::new(),
                 pending_research: Vec::new(),
+                soft_research: Vec::new(),
                 training: Vec::new(),
                 train_orders,
                 units: BTreeMap::new(),
@@ -310,11 +316,15 @@ impl<'a> Sim<'a> {
         self.events.push(TimedEvent { time: self.state.time, event: Event::Decision { villager: id, choice: pool.to_owned() } });
     }
 
-    /// Pide una investigación (p. ej. el clic de edad) desde fuera.
-    pub fn queue_research(&mut self, tech: &str) {
+    /// Pide una investigación (p. ej. el clic de edad) desde fuera. Con
+    /// `soft`, el CU sigue creando aldeanos hasta que se pueda investigar.
+    pub fn queue_research(&mut self, tech: &str, soft: bool) {
         let id = self.sc.rules.tech_id(tech).expect("tecnología conocida");
         if !self.state.pending_research.contains(&id) && !self.state.has_tech(id) {
             self.state.pending_research.push(id);
+            if soft {
+                self.state.soft_research.push(id);
+            }
         }
     }
 
@@ -497,15 +507,21 @@ impl<'a> Sim<'a> {
     // ---------- el paso ----------
 
     pub fn tick(&mut self) {
+        self.born_before_tick = self.state.next_villager;
         self.run_steps();
         self.run_auto();
         self.run_tc();
         self.run_research();
         self.run_training();
+        // Los aldeanos que nacen en este segundo empiezan a trabajar en el siguiente.
+        let born = self.state.next_villager;
+        let n_before = self.born_before_tick;
         for vi in 0..self.state.villagers.len() {
-            if Some(self.state.villagers[vi].id) != self.decision {
-                self.act(vi);
+            let id = self.state.villagers[vi].id;
+            if id >= n_before && id < born {
+                continue;
             }
+            self.act(vi);
         }
         self.run_construction();
         self.check_exhausted();
@@ -539,6 +555,9 @@ impl<'a> Sim<'a> {
                 StepAction::Research(t) => {
                     let tech = self.sc.rules.tech_id(t).unwrap();
                     self.state.pending_research.push(tech);
+                    if step.soft {
+                        self.state.soft_research.push(tech);
+                    }
                     self.steps[i] = StepState::Done;
                 }
                 StepAction::Move { from, to, count } => {
@@ -669,8 +688,10 @@ impl<'a> Sim<'a> {
         };
         let s = &self.state.sources[si];
         if let (Some(b), false, false) = (s.drop_site, s.has_drop_site, s.drop_site_planned) {
+            // El aldeano empieza a trabajar ya; el punto de entrega se coloca
+            // en cuanto alcancen los recursos (ver run_auto).
             self.state.sources[si].drop_site_planned = true;
-            self.state.villagers[vi].activity = Activity::WaitBuild { building: b, at: Some(pool) };
+            self.pending_drop_sites.push((b, pool));
         }
     }
 
@@ -691,6 +712,20 @@ impl<'a> Sim<'a> {
                 let builders = if free == 0 { 2 } else { 1 };
                 self.place_building(ids::HOUSE, builders, from, None, None, true);
             }
+        }
+        // Puntos de entrega pendientes: colocarlos cuando alcance.
+        let mut i = 0;
+        while i < self.pending_drop_sites.len() {
+            let (b, pool) = self.pending_drop_sites[i];
+            if self.place_building(b, 1, pool, None, Some(pool), false) {
+                self.pending_drop_sites.remove(i);
+            } else {
+                i += 1;
+            }
+        }
+        // Atraer el siguiente jabalí antes de que se acabe el actual.
+        if let Some(threshold) = auto.lure_ahead {
+            self.lure_ahead(threshold as f64);
         }
         // Edificios que pide la siguiente edad.
         if let Some(target) = auto.age_buildings {
@@ -752,6 +787,33 @@ impl<'a> Sim<'a> {
                     }
                 }
             }
+        }
+    }
+
+    fn lure_ahead(&mut self, threshold: f64) {
+        let now = self.state.time;
+        for si in 0..self.state.sources.len() {
+            let s = &self.state.sources[si];
+            if s.lure_seconds == 0 || !s.lured || s.remaining > threshold {
+                continue;
+            }
+            let pool = s.pool;
+            let next = (si + 1..self.state.sources.len()).find(|&n| {
+                let x = &self.state.sources[n];
+                x.pool == pool && x.lure_seconds > 0 && !x.lured && !x.luring && x.arrives_at <= now && x.remaining > EPS
+            });
+            let Some(next) = next else { continue };
+            let Some(vi) = (0..self.state.villagers.len()).rev().find(|&vi| {
+                let v = &self.state.villagers[vi];
+                v.pool == pool && !v.activity.is_building() && !matches!(v.activity, Activity::Luring { .. })
+            }) else {
+                continue;
+            };
+            let left = self.state.sources[next].lure_seconds as f64;
+            self.state.sources[next].luring = true;
+            self.state.villagers[vi].activity = Activity::Luring { source: next, left };
+            let (source, villager) = (self.state.sources[next].id.clone(), self.state.villagers[vi].id);
+            self.event(Event::Lured { source, villager });
         }
     }
 
@@ -876,12 +938,15 @@ impl<'a> Sim<'a> {
             .pending_research
             .iter()
             .position(|&t| self.research_building(t) == ids::TOWN_CENTER);
-        let cause = if let Some(pos) = tc_research {
+        let mut cause = None;
+        let mut make_villager = tc_research.is_none();
+        if let Some(pos) = tc_research {
             let tech = self.state.pending_research[pos];
             let cost = self.sc.data.tech(tech).unwrap().cost;
             if self.research_ready(tech) && self.state.res.can_afford(&cost) {
                 self.state.res.pay(&cost);
                 self.state.pending_research.remove(pos);
+                self.state.soft_research.retain(|t| *t != tech);
                 let time = self.sc.data.tech(tech).unwrap().research_time;
                 self.state.tc = Some(Running { building: ids::TOWN_CENTER, job: Job::Research(tech), left: time });
                 if let Some(age) = self.sc.rules.age_of_tech(tech) {
@@ -889,14 +954,17 @@ impl<'a> Sim<'a> {
                 }
                 let tech = self.tech_name(tech);
                 self.event(Event::ResearchStarted { tech });
-                None
+            } else if self.state.soft_research.contains(&tech) {
+                // Clic "suave": mientras no se pueda, el CU sigue con aldeanos.
+                make_villager = true;
             } else {
-                Some(IdleCause::WaitingResearch)
+                cause = Some(IdleCause::WaitingResearch);
             }
-        } else {
+        }
+        if make_villager {
             let v = self.sc.data.unit(ids::VILLAGER).unwrap();
             let enough = self.max_villagers.is_some_and(|m| self.state.villagers.len() as u32 >= m);
-            if enough {
+            cause = if enough {
                 Some(IdleCause::NoOrder)
             } else if self.state.pop() + self.state.training.len() as u32 >= self.pop_cap() {
                 Some(IdleCause::Housed)
@@ -906,8 +974,8 @@ impl<'a> Sim<'a> {
                 self.state.res.pay(&v.cost);
                 self.state.tc = Some(Running { building: ids::TOWN_CENTER, job: Job::Villager, left: v.train_time });
                 None
-            }
-        };
+            };
+        }
         self.track_idle(cause);
     }
 
@@ -1349,6 +1417,12 @@ impl<'a> Sim<'a> {
     // ---------- salida ----------
 
     fn snapshot(&mut self) {
+        let snap = self.current_snapshot();
+        self.ticks.push(snap);
+    }
+
+    /// Foto del estado en este segundo (recursos, población, aldeanos por tarea).
+    pub fn current_snapshot(&self) -> Snapshot {
         let mut by_task: BTreeMap<String, u32> = BTreeMap::new();
         for v in &self.state.villagers {
             let key = if v.activity.is_building() {
@@ -1361,7 +1435,7 @@ impl<'a> Sim<'a> {
             *by_task.entry(key).or_default() += 1;
         }
         let r = self.state.res;
-        self.ticks.push(Snapshot {
+        Snapshot {
             time: self.state.time,
             tick: self.state.time / TICK_SECONDS,
             age: self.state.age,
@@ -1373,7 +1447,7 @@ impl<'a> Sim<'a> {
             pop_cap: self.pop_cap(),
             villagers_by_task: by_task,
             tc_idle_seconds: self.summary.tc_idle_total(),
-        });
+        }
     }
 
     fn finish(mut self) -> Timeline {

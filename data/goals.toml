@@ -1,0 +1,28 @@
+# Objetivos predefinidos para la interfaz y la CLI. Los textos están en
+# data/i18n (sección goals). Un objetivo se cumple cuando todo lo pedido está.
+[[goal]]
+id = "feudal"
+age = "Feudal"
+
+[[goal]]
+id = "castle"
+age = "Castle"
+
+[[goal]]
+id = "imperial"
+age = "Imperial"
+allow_tc_idle = true   # para Imperial se suele parar el CU unos segundos y ahorrar
+
+[[goal]]
+id = "villagers_30_feudal"
+age = "Feudal"
+villagers = 30
+
+[[goal]]
+id = "archers_20"
+units = [{ unit = "archer", count = 20 }]
+techs = ["fletching"]
+
+[[goal]]
+id = "knights_10"
+units = [{ unit = "knight", count = 10 }]

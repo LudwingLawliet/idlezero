@@ -172,6 +172,8 @@ pub struct GameState {
     pub research: Vec<Running>,
     /// Investigaciones pedidas por la orden que aún no empiezan.
     pub pending_research: Vec<u32>,
+    /// Investigaciones del CU pedidas en modo suave (no paran los aldeanos).
+    pub soft_research: Vec<u32>,
     /// Unidades en entrenamiento (una por edificio productor).
     pub training: Vec<Running>,
     /// Unidades pedidas: (unidad, cuántas faltan por empezar).

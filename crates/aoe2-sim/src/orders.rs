@@ -54,6 +54,10 @@ pub struct Auto {
     /// Tecnologías a investigar en cuanto se pueda (construye su edificio).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub research: Vec<String>,
+    /// Atraer la siguiente fuente de un pool (el 2.º jabalí) cuando a la
+    /// actual le quede esta comida o menos.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lure_ahead: Option<u32>,
     /// Producción continua de una unidad.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub production: Option<Production>,
@@ -128,6 +132,10 @@ pub struct Step {
     pub at: Option<String>,
     /// Investigar una tecnología.
     pub research: Option<String>,
+    /// Con `research` en el CU: seguir creando aldeanos hasta poder
+    /// investigar (en vez de parar el CU y esperar).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub soft: bool,
     /// Entrenar `count` unidades (nombre corto de rules.toml).
     pub train: Option<String>,
     /// Atraer una fuente (id del mapa, p. ej. "boar_2") con un aldeano de `from`.

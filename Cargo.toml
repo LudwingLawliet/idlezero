@@ -21,3 +21,10 @@ lto = true
 opt-level = 3
 panic = "abort"
 strip = true
+
+# El optimizador simula miles de variantes: también optimizado en desarrollo y tests.
+[profile.dev.package.aoe2-sim]
+opt-level = 2
+
+[profile.dev.package.aoe2-opt]
+opt-level = 2

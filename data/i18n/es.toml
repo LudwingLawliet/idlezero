@@ -63,3 +63,11 @@ reached = "llega a {age}"
 tc_idle = "CU inactivo"
 villager_idle = "aldeanos ociosos (aldeano·s)"
 gathered = "recolectado"
+
+[goals]
+feudal = "Edad Feudal lo antes posible"
+castle = "Edad de los Castillos lo antes posible"
+imperial = "Edad Imperial lo antes posible"
+villagers_30_feudal = "30 aldeanos en Feudal"
+archers_20 = "20 arqueros con Emplumado de flechas"
+knights_10 = "10 caballeros"
