@@ -8,6 +8,7 @@
 //! ni el micro del explorador (las ovejas llegan en segundos fijos del mapa),
 //! ni bonos de civilización.
 
+pub mod calc;
 pub mod orders;
 pub mod report;
 pub mod scenario;

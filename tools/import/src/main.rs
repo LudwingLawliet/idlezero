@@ -106,7 +106,7 @@ fn main() -> Res<()> {
         .unwrap_or_else(|| root.join("data/game_data.json"));
 
     let (data, votes) = import(&vendor)?;
-    copy_icons(&vendor, &root, &votes)?;
+    copy_icons(&vendor, &root, &data, &votes)?;
     let mut json = serde_json::to_string_pretty(&data)?;
     json.push('\n');
     std::fs::write(&out, json)?;
@@ -211,24 +211,50 @@ fn import(vendor: &Path) -> Res<(GameData, HashMap<(Kind, u32), NodeVotes>)> {
     // Mejoras de unidad (Ballestero, Hostigador de élite…): se guardan como
     // tecnologías que se investigan en el edificio de la unidad.
     let mut unit_upgrades = BTreeMap::new();
-    for (unit_key, e) in &raw.data.unit_upgrades {
-        let unit: u32 = unit_key.parse()?;
-        let Some(u) = units.get(&unit) else { continue };
-        let tree = u.tree.clone();
+    // Orden fijo (por id de unidad) y, si dos unidades comparten tecnología de
+    // mejora, gana la más común: el resultado no depende del orden del JSON.
+    let mut upgrades: Vec<(u32, &RawEntity)> = raw
+        .data
+        .unit_upgrades
+        .iter()
+        .map(|(k, e)| Ok((k.parse::<u32>()?, e)))
+        .collect::<Res<_>>()?;
+    upgrades.sort_by_key(|(u, _)| *u);
+    let civs = |u: u32| units.get(&u).and_then(|x: &Unit| x.tree.as_ref()).map_or(0, |t| t.civ_count);
+    let mut owner: BTreeMap<u32, u32> = BTreeMap::new();
+    for (unit, e) in &upgrades {
+        if !units.contains_key(unit) || raw.data.techs.contains_key(&e.id.to_string()) {
+            continue;
+        }
+        match owner.get(&e.id) {
+            Some(prev) if civs(*prev) >= civs(*unit) => {}
+            _ => {
+                owner.insert(e.id, *unit);
+            }
+        }
+    }
+    for (unit, e) in &upgrades {
+        if owner.get(&e.id) != Some(unit) {
+            continue;
+        }
+        let u = &units[unit];
         let names = Names {
             en: format!("{} (upgrade)", u.names.en),
             es: format!("{} (mejora)", u.names.es),
         };
-        techs.entry(e.id).or_insert(Tech {
-            id: e.id,
-            internal_name: e.internal_name.clone(),
-            names,
-            cost: cost(&e.cost)?,
-            research_time: e.research_time.ok_or(format!("mejora {} sin ResearchTime", e.id))?,
-            repeatable: false,
-            tree,
-        });
-        unit_upgrades.insert(unit, e.id);
+        techs.insert(
+            e.id,
+            Tech {
+                id: e.id,
+                internal_name: e.internal_name.clone(),
+                names,
+                cost: cost(&e.cost)?,
+                research_time: e.research_time.ok_or(format!("mejora {} sin ResearchTime", e.id))?,
+                repeatable: false,
+                tree: u.tree.clone(),
+            },
+        );
+        unit_upgrades.insert(*unit, e.id);
     }
 
     let data = GameData {
@@ -242,42 +268,41 @@ fn import(vendor: &Path) -> Res<(GameData, HashMap<(Kind, u32), NodeVotes>)> {
     Ok((data, votes))
 }
 
-#[derive(Deserialize)]
-struct RulesNames {
-    names: NamesTables,
-}
-
-#[derive(Deserialize)]
-struct NamesTables {
-    buildings: BTreeMap<String, u32>,
-    techs: BTreeMap<String, u32>,
-    units: BTreeMap<String, u32>,
-}
-
-/// Copia a app/public/img los íconos que usa la app, con su nombre corto de
-/// data/rules.toml (`building/house.png`, `tech/feudal_age.png`…), más los de
-/// recursos y edades. Solo íconos ya publicados por aoe2techtree (reglas de
-/// contenido de Microsoft: nada extraído de los archivos del juego).
-fn copy_icons(vendor: &Path, root: &Path, votes: &HashMap<(Kind, u32), NodeVotes>) -> Res<()> {
-    let rules: RulesNames = toml::from_str(&std::fs::read_to_string(root.join("data/rules.toml"))?)?;
+/// Copia a app/public/img los íconos del catálogo de la app, por id
+/// (`unit/4.png`, `building/68.png`, `tech/101.png`), más recursos y edades.
+/// Solo entidades comunes (al menos `MIN_CIVS` civilizaciones). Solo íconos ya
+/// publicados por aoe2techtree (reglas de contenido de Microsoft: nada
+/// extraído de los archivos del juego).
+fn copy_icons(vendor: &Path, root: &Path, data: &GameData, votes: &HashMap<(Kind, u32), NodeVotes>) -> Res<()> {
     let img = vendor.join("img");
     let out = root.join("app/public/img");
+    for dir in ["unit", "building", "tech"] {
+        let _ = std::fs::remove_dir_all(out.join(dir));
+        std::fs::create_dir_all(out.join(dir))?;
+    }
     let mut copied = 0;
-    let groups = [
-        (Kind::Building, "Building", "building", &rules.names.buildings),
-        (Kind::Tech, "Tech", "tech", &rules.names.techs),
-        (Kind::Unit, "Unit", "unit", &rules.names.units),
-    ];
-    for (kind, src_dir, dst_dir, names) in groups {
-        std::fs::create_dir_all(out.join(dst_dir))?;
-        for (name, id) in names {
-            let Some(pic) = votes.get(&(kind, *id)).and_then(|v| v.picture_index) else {
-                eprintln!("sin ícono: {dst_dir}/{name}");
-                continue;
-            };
-            std::fs::copy(img.join(src_dir).join(format!("{pic}.png")), out.join(dst_dir).join(format!("{name}.png")))?;
+    let mut copy = |src_dir: &str, dst_dir: &str, id: u32, pic_of: (Kind, u32)| -> Res<()> {
+        let Some(v) = votes.get(&pic_of) else { return Ok(()) };
+        let (Some(pic), true) = (v.picture_index, v.civs >= MIN_CIVS) else { return Ok(()) };
+        let src = img.join(src_dir).join(format!("{pic}.png"));
+        if src.exists() {
+            std::fs::copy(src, out.join(dst_dir).join(format!("{id}.png")))?;
             copied += 1;
         }
+        Ok(())
+    };
+    for id in data.units.keys() {
+        copy("Unit", "unit", *id, (Kind::Unit, *id))?;
+    }
+    for id in data.buildings.keys() {
+        copy("Building", "building", *id, (Kind::Building, *id))?;
+    }
+    for id in data.techs.keys() {
+        copy("Tech", "tech", *id, (Kind::Tech, *id))?;
+    }
+    // Mejoras de unidad: ícono de la unidad que se obtiene.
+    for (unit, tech) in &data.unit_upgrades {
+        copy("Unit", "tech", *tech, (Kind::Unit, *unit))?;
     }
     std::fs::create_dir_all(out.join("resource"))?;
     for r in ["food", "wood", "gold", "stone"] {
@@ -298,6 +323,9 @@ fn copy_icons(vendor: &Path, root: &Path, votes: &HashMap<(Kind, u32), NodeVotes
     eprintln!("{copied} íconos -> {}", out.display());
     Ok(())
 }
+
+/// Civilizaciones mínimas para entrar en el catálogo (excluye lo único de una civ).
+const MIN_CIVS: u32 = 20;
 
 /// Los textos del árbol traen saltos de línea HTML ("Lumber<br>\nCamp").
 fn clean_name(s: &str) -> String {

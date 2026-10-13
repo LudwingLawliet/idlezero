@@ -1272,6 +1272,19 @@ impl<'a> Sim<'a> {
         }
     }
 
+    /// Da por construido el punto de entrega de la primera fuente del pool
+    /// (calculadora: "con campamento").
+    pub fn grant_drop_site(&mut self, pool: &str) {
+        let Some(p) = self.pools.iter().position(|x| x == pool) else { return };
+        if let Some(s) = self.state.sources.iter_mut().find(|s| s.pool == p && s.drop_site.is_some()) {
+            s.has_drop_site = true;
+            s.drop_site_planned = true;
+            if let Some(d) = s.distance_with_drop_site {
+                s.distance = d;
+            }
+        }
+    }
+
     /// Da una tecnología ya investigada (escenarios de prueba, bonos de inicio).
     pub fn grant_tech(&mut self, tech: u32) {
         if !self.state.has_tech(tech) {
