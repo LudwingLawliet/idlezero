@@ -34,6 +34,15 @@ function Summary({ result, timeline, labels, goalTime, millis }: { result: OptRe
         <span className="muted">{L.totalTime}</span>
         <strong>{goalTime !== null ? clock(goalTime) : "—"}</strong>
       </div>
+      {result.neutral_time !== null && goalTime !== null && (
+        <div className="kv">
+          <span>{L.vsNeutral}</span>
+          <span className={goalTime < result.neutral_time ? "good" : goalTime > result.neutral_time ? "bad" : ""}>
+            {clock(result.neutral_time)} → {clock(goalTime)} ({goalTime - result.neutral_time > 0 ? "+" : ""}
+            {goalTime - result.neutral_time} s)
+          </span>
+        </div>
+      )}
       <div className="kv">
         <span>{L.villagers}</span>
         <span>{timeline.villagers.length}</span>
@@ -174,14 +183,14 @@ function VillagerDetail({ id, result, timeline, layout, labels }: { id: number; 
   );
 }
 
-function BuildingDetail({ placement, layout, labels, map, goal, orderToml }: { placement: number; layout: MapLayout; labels: Labels; map: string; goal: Goal; orderToml: string }) {
+function BuildingDetail({ placement, layout, labels, map, goal, orderToml, civ }: { placement: number; layout: MapLayout; labels: Labels; map: string; goal: Goal; orderToml: string; civ: string }) {
   const L = labels.ui;
   const b = layout.buildings.find((x) => x.placement === placement);
   const [whatIf, setWhatIf] = useState<WhatIf[] | null>(null);
   useEffect(() => {
     setWhatIf(null);
-    invoke<WhatIf[]>("builders_what_if", { map, goal, orderToml, placement }).then(setWhatIf, () => setWhatIf([]));
-  }, [placement, map, goal, orderToml]);
+    invoke<WhatIf[]>("builders_what_if", { map, goal, orderToml, placement, civ: civ || null }).then(setWhatIf, () => setWhatIf([]));
+  }, [placement, map, goal, orderToml, civ]);
   if (!b) return null;
   const base = whatIf?.find((w) => w.builders === b.builders.length)?.goal_time ?? null;
   return (
@@ -241,6 +250,7 @@ export default function SidePanel(props: {
   map: string;
   goal: Goal;
   plan: Plan;
+  civ: string;
   planBusy: boolean;
   onPlan: (p: Plan) => void;
 }) {
@@ -251,7 +261,7 @@ export default function SidePanel(props: {
     <aside className="side">
       {selected?.kind === "villager" && <VillagerDetail id={selected.id} result={result} timeline={timeline} layout={layout} labels={labels} />}
       {selected?.kind === "building" && props.plan === result.best && (
-        <BuildingDetail placement={selected.placement} layout={layout} labels={labels} map={props.map} goal={props.goal} orderToml={result.order_toml} />
+        <BuildingDetail placement={selected.placement} layout={layout} labels={labels} map={props.map} goal={props.goal} orderToml={result.order_toml} civ={props.civ} />
       )}
       {!selected && (
         <section>

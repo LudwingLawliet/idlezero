@@ -21,6 +21,8 @@ const MAPS: &[(&str, &str)] = &[
 pub const LANGS: &[(&str, &str)] = &[("en", data!("i18n/en.toml")), ("es", data!("i18n/es.toml"))];
 
 pub struct Bundle {
+    pub civs: Vec<aoe2_data::civs::CivInfo>,
+    pub civ_bonuses: Vec<aoe2_data::civs::CivBonuses>,
     pub data: GameData,
     pub rates: GatherRates,
     pub rules: Rules,
@@ -36,6 +38,8 @@ fn parse<T: serde::de::DeserializeOwned>(what: &str, text: &str) -> T {
 pub fn bundle() -> &'static Bundle {
     static B: OnceLock<Bundle> = OnceLock::new();
     B.get_or_init(|| Bundle {
+        civs: aoe2_data::civs::parse_civs(data!("civs.json")).expect("civs.json embebido"),
+        civ_bonuses: aoe2_data::civs::parse_bonuses(data!("civ_bonuses.toml")).expect("civ_bonuses.toml embebido"),
         data: serde_json::from_str(data!("game_data.json")).expect("game_data.json embebido"),
         rates: parse("gather_rates", data!("gather_rates.toml")),
         rules: parse("rules", data!("rules.toml")),
@@ -52,8 +56,9 @@ pub fn locale(lang: &str) -> Locale {
     Locale::from_toml(lang, text, (lang != LANGS[0].0).then_some(fallback)).expect("i18n embebido")
 }
 
-/// Escenario con una orden vacía (el optimizador pone la suya).
-pub fn scenario(map: &str) -> Result<Scenario, String> {
+/// Escenario con una orden vacía (el optimizador pone la suya) y, si se da,
+/// la civilización (árbol + bonos).
+pub fn scenario(map: &str, civ: Option<&str>) -> Result<Scenario, String> {
     let b = bundle();
     let (_, m) = b.maps.iter().find(|(id, _)| id == map).ok_or(format!("mapa desconocido: {map}"))?;
     let order = BuildOrder::parse(&format!("name = \"-\"\nmap = \"{map}\"\ndefault_pool = \"forest\""))
@@ -65,5 +70,9 @@ pub fn scenario(map: &str) -> Result<Scenario, String> {
         modifiers: b.modifiers.clone(),
         map: m.clone(),
         order,
+        civ: match civ {
+            Some(id) => Some(aoe2_data::Civ::build(id, &b.civs, &b.civ_bonuses).ok_or(format!("civilización desconocida: {id}"))?),
+            None => None,
+        },
     })
 }

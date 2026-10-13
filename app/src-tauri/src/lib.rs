@@ -140,7 +140,7 @@ fn app_info(lang: String) -> AppInfo {
         .filter(|x| common(x.tree.as_ref()))
         .map(|x| {
             let key = key_of(&b.rules.names.buildings, x.id);
-            let sc = bundle::scenario(&b.maps[0].0).ok();
+            let sc = bundle::scenario(&b.maps[0].0, None).ok();
             let age = sc.map_or(x.tree.as_ref().unwrap().age, |sc| sc.building_age(x.id));
             Entity { key, id: x.id, name: x.names.get(&lang).to_owned(), age }
         })
@@ -189,9 +189,9 @@ async fn blocking<T: Send + 'static>(f: impl FnOnce() -> Result<T, String> + Sen
 }
 
 #[tauri::command]
-async fn optimize(map: String, goal: Goal, lang: String) -> Result<OptimizeView, String> {
+async fn optimize(map: String, goal: Goal, lang: String, civ: Option<String>) -> Result<OptimizeView, String> {
     blocking(move || {
-        let sc = bundle::scenario(&map)?;
+        let sc = bundle::scenario(&map, civ.as_deref())?;
         let started = std::time::Instant::now();
         let result = aoe2_opt::optimize(&sc, &goal, OptConfig::default())?;
         let millis = started.elapsed().as_millis();
@@ -210,9 +210,9 @@ struct PlanView {
 
 /// Simula otro camino completo (para compararlo con el mejor).
 #[tauri::command]
-async fn simulate_plan(map: String, goal: Goal, choices: Vec<Choice>, lang: String) -> Result<PlanView, String> {
+async fn simulate_plan(map: String, goal: Goal, choices: Vec<Choice>, lang: String, civ: Option<String>) -> Result<PlanView, String> {
     blocking(move || {
-        let sc = bundle::scenario(&map)?;
+        let sc = bundle::scenario(&map, civ.as_deref())?;
         let opt = Optimizer::new(&sc, &goal, OptConfig::default())?;
         let (time, timeline) = opt.plan_timeline(&choices);
         let events = text_events(&sc, &lang, &timeline);
@@ -233,9 +233,15 @@ struct WhatIf {
 /// "¿Y si construyo este edificio con N aldeanos?": re-simula la orden con
 /// 1 a 5 constructores en el edificio nº `placement`.
 #[tauri::command]
-async fn builders_what_if(map: String, goal: Goal, order_toml: String, placement: usize) -> Result<Vec<WhatIf>, String> {
+async fn builders_what_if(
+    map: String,
+    goal: Goal,
+    order_toml: String,
+    placement: usize,
+    civ: Option<String>,
+) -> Result<Vec<WhatIf>, String> {
     blocking(move || {
-        let base = bundle::scenario(&map)?;
+        let base = bundle::scenario(&map, civ.as_deref())?;
         let order = BuildOrder::parse(&order_toml).map_err(|e| e.to_string())?;
         let sc = Scenario { order, ..base };
         let mut out = Vec::new();
@@ -262,9 +268,57 @@ async fn builders_what_if(map: String, goal: Goal, order_toml: String, placement
 }
 
 #[tauri::command]
-fn calculate(map: String, input: CalcInput) -> Result<CalcResult, String> {
-    let sc = bundle::scenario(&map)?;
+fn calculate(map: String, input: CalcInput, civ: Option<String>) -> Result<CalcResult, String> {
+    let sc = bundle::scenario(&map, civ.as_deref())?;
     aoe2_sim::calc::calculate(&sc, &input)
+}
+
+#[derive(Serialize)]
+struct CivView {
+    id: String,
+    name: String,
+    /// Texto oficial del juego con los bonos.
+    description: String,
+    icon: String,
+    /// Bonos que el simulador aplica (vacío = solo el árbol tecnológico).
+    simulated: Vec<String>,
+    units: Vec<u32>,
+    techs: Vec<u32>,
+    buildings: Vec<u32>,
+}
+
+/// Civilizaciones para la ventana de selección, ordenadas por nombre.
+#[tauri::command]
+fn civs(lang: String) -> Vec<CivView> {
+    let b = bundle();
+    let mut out: Vec<CivView> = b
+        .civs
+        .iter()
+        .map(|c| {
+            let simulated = b
+                .civ_bonuses
+                .iter()
+                .find(|x| x.id == c.id)
+                .map(|x| {
+                    let mut t: Vec<String> = x.bonuses.iter().map(|b| b.text.clone()).collect();
+                    t.dedup();
+                    t
+                })
+                .unwrap_or_default();
+            CivView {
+                id: c.id.clone(),
+                name: c.names.get(&lang).to_owned(),
+                description: c.description.get(&lang).to_owned(),
+                icon: format!("/img/civ/{}", c.icon),
+                simulated,
+                units: c.units.clone(),
+                techs: c.techs.clone(),
+                buildings: c.buildings.clone(),
+            }
+        })
+        .collect();
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    out
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -280,7 +334,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![app_info, optimize, simulate_plan, builders_what_if, calculate])
+        .invoke_handler(tauri::generate_handler![app_info, civs, optimize, simulate_plan, builders_what_if, calculate])
         .run(tauri::generate_context!())
         .expect("error al iniciar la aplicación Tauri");
 }
@@ -305,7 +359,7 @@ mod tests {
         let order = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../data/build_orders/fast_castle_27_2.toml")).unwrap();
         let goal = aoe2_opt::Goal::age(aoe2_data::Age::Feudal);
         // Edificio nº 2: el campamento maderero del aldeano 7.
-        let r = tauri::async_runtime::block_on(super::builders_what_if("arabia_neutra".into(), goal, order, 2)).unwrap();
+        let r = tauri::async_runtime::block_on(super::builders_what_if("arabia_neutra".into(), goal, order, 2, None)).unwrap();
         let secs: Vec<u32> = r.iter().map(|w| w.build_seconds.unwrap()).collect();
         assert!(secs.windows(2).all(|w| w[1] <= w[0]), "{secs:?}");
         assert!(secs[0] > secs[4]);
@@ -319,7 +373,7 @@ mod custom_goal {
         // 10 ballesteros (id 24): no está en las plantillas y exige investigar "Crossbow".
         let goal: aoe2_opt::Goal =
             serde_json::from_str(r#"{"id":"custom","units":[{"unit":"24","count":10}],"techs":[],"buildings":[],"allow_tc_idle":false}"#).unwrap();
-        let v = tauri::async_runtime::block_on(super::optimize("arabia_neutra".into(), goal, "es".into())).unwrap();
+        let v = tauri::async_runtime::block_on(super::optimize("arabia_neutra".into(), goal, "es".into(), None)).unwrap();
         assert!(v.result.best.time.is_some(), "sin plan para 10 ballesteros");
         let tl = &v.result.timeline;
         let trained = tl.events.iter().filter(|e| matches!(e.event, aoe2_sim::Event::UnitTrained { .. })).count();
@@ -332,5 +386,19 @@ mod custom_goal {
         assert!(upgrade_done.is_some(), "falta la mejora Ballestero");
         assert!(first_unit.unwrap() > upgrade_done.unwrap());
         println!("10 ballesteros: {:?}", v.result.best.time);
+    }
+}
+
+#[cfg(test)]
+mod civs_tests {
+    #[test]
+    fn civs_list_has_shields_descriptions_and_simulated_bonuses() {
+        let list = super::civs("es".into());
+        assert!(list.len() >= 50);
+        let huns = list.iter().find(|c| c.id == "Huns").unwrap();
+        assert_eq!(huns.name, "Hunos");
+        assert!(huns.description.contains("casas"));
+        assert!(!huns.simulated.is_empty());
+        assert!(list.iter().any(|c| c.simulated.is_empty()), "las demás solo con árbol");
     }
 }

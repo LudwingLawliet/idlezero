@@ -13,9 +13,35 @@ pub struct Scenario {
     pub modifiers: Modifiers,
     pub map: MapDef,
     pub order: BuildOrder,
+    /// Civilización (árbol + bonos). `None` = escenario neutro.
+    pub civ: Option<aoe2_data::Civ>,
 }
 
 impl Scenario {
+    /// Con la civilización `id` (árbol y bonos de data/civs.json y civ_bonuses.toml).
+    pub fn with_civ(mut self, data_dir: &Path, id: &str) -> Result<Scenario, LoadError> {
+        self.civ = aoe2_data::Civ::load(data_dir, id)?;
+        Ok(self)
+    }
+
+    /// Bonos de la civilización (vacío en el escenario neutro).
+    pub fn bonuses(&self) -> impl Iterator<Item = &aoe2_data::civs::BonusKind> {
+        self.civ.iter().flat_map(|c| c.bonuses.iter().map(|b| &b.kind))
+    }
+
+    /// ¿La civilización tiene esta unidad / tecnología / edificio? (neutro: todo)
+    pub fn civ_has_unit(&self, id: u32) -> bool {
+        self.civ.as_ref().is_none_or(|c| c.has_unit(id))
+    }
+
+    pub fn civ_has_tech(&self, id: u32) -> bool {
+        self.civ.as_ref().is_none_or(|c| c.has_tech(id) || self.data.unit_upgrades.values().any(|t| *t == id))
+    }
+
+    pub fn civ_has_building(&self, id: u32) -> bool {
+        self.civ.as_ref().is_none_or(|c| c.has_building(id))
+    }
+
     /// Unidad por nombre corto de rules.toml o por id ("archer" o "4").
     pub fn unit_ref(&self, s: &str) -> Option<u32> {
         self.rules.unit_id(s).or_else(|| s.parse().ok().filter(|id| self.data.unit(*id).is_some()))
@@ -65,6 +91,7 @@ impl Scenario {
             modifiers: Modifiers::load(&data_dir.join("modifiers.toml"))?,
             map: MapDef::load(&data_dir.join("maps").join(format!("{map}.toml")))?,
             order,
+            civ: None,
         })
     }
 }

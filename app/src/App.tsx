@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { AppInfo, Goal, OptimizeView, Plan, PlanView } from "./types";
+import { AppInfo, CivView, Goal, OptimizeView, Plan, PlanView } from "./types";
 import { makeLabels } from "./labels";
 import { layoutMap } from "./layout";
 import EconomyMap, { MapLegend, Selection } from "./EconomyMap";
@@ -9,6 +9,7 @@ import ListView from "./ListView";
 import Calculator from "./Calculator";
 import GoalBuilder, { emptyGoal } from "./GoalBuilder";
 import Shortcuts from "./Shortcuts";
+import CivPicker from "./CivPicker";
 import "./App.css";
 
 const RULES_URL = "https://www.xbox.com/en-US/developers/rules";
@@ -45,9 +46,13 @@ export default function App() {
   const [planView, setPlanView] = useState<PlanView | null>(null);
   const [planBusy, setPlanBusy] = useState(false);
   const [help, setHelp] = useState(false);
+  const [civ, setCiv] = useState<string>(() => stored("civ", ""));
+  const [civs, setCivs] = useState<CivView[]>([]);
+  const [civOpen, setCivOpen] = useState(false);
 
   useEffect(() => {
     invoke<AppInfo>("app_info", { lang }).then(setInfo, (e) => setError(String(e)));
+    invoke<CivView[]>("civs", { lang }).then(setCivs, (e) => setError(String(e)));
     remember("lang", lang);
   }, [lang]);
 
@@ -56,7 +61,8 @@ export default function App() {
     setError(null);
     remember("map", map);
     remember("goal", goal);
-    invoke<OptimizeView>("optimize", { map, goal, lang })
+    remember("civ", civ);
+    invoke<OptimizeView>("optimize", { map, goal, lang, civ: civ || null })
       .then(
         (v) => {
           setView(v);
@@ -67,13 +73,14 @@ export default function App() {
         (e) => setError(String(e)),
       )
       .finally(() => setBusy(false));
-  }, [map, goal, lang]);
+  }, [map, goal, lang, civ]);
 
-  // Primer cálculo al abrir y al cambiar de idioma (textos del motor).
+  // Primer cálculo al abrir, al cambiar de idioma (textos del motor) y al
+  // cambiar de civilización (mismo mapa y objetivo, nuevos bonos).
   useEffect(() => {
     if (info) run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [info]);
+  }, [info, civ]);
 
   // Otro camino: se simula entero para verlo en el mapa.
   const choosePlan = (p: Plan) => {
@@ -85,7 +92,7 @@ export default function App() {
       return;
     }
     setPlanBusy(true);
-    invoke<PlanView>("simulate_plan", { map, goal: view.result.goal, choices: p.choices, lang })
+    invoke<PlanView>("simulate_plan", { map, goal: view.result.goal, choices: p.choices, lang, civ: civ || null })
       .then(setPlanView, (e) => setError(String(e)))
       .finally(() => setPlanBusy(false));
   };
@@ -104,12 +111,17 @@ export default function App() {
       const tabs: Record<string, "map" | "list" | "calc"> = { "1": "map", "2": "list", "3": "calc" };
       if (tabs[e.key]) setTab(tabs[e.key]);
       else if (e.key === "?") setHelp((h) => !h);
-      else if (e.key === "Escape") setHelp(false);
+      else if (e.key === "c" || e.key === "C") setCivOpen(true);
+      else if (e.key === "Escape") {
+        setHelp(false);
+        setCivOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [run]);
 
+  const civInfo = civs.find((c) => c.id === civ);
   const mapInfo = info?.maps.find((m) => m.id === map);
   const labels = useMemo(() => (info ? makeLabels(info, lang, mapInfo) : null), [info, lang, mapInfo]);
   const timeline = planView?.timeline ?? view?.result.timeline;
@@ -137,6 +149,13 @@ export default function App() {
           </div>
         </div>
         <div className="controls">
+          <button className="civ-button" onClick={() => setCivOpen(true)} title={`${L.civ} (C)`}>
+            {civInfo ? <img src={civInfo.icon} alt="" /> : <span className="civ-neutral">⚖</span>}
+            <span>
+              <small className="muted">{L.civ}</small>
+              {civInfo?.name ?? L.neutral}
+            </span>
+          </button>
           <label>
             {L.map}
             <select value={map} onChange={(e) => setMap(e.target.value)}>
@@ -164,7 +183,7 @@ export default function App() {
         </div>
         <div className="goal-row">
           <span className="goal-title">{L.goal}</span>
-          <GoalBuilder goal={goal} onChange={setGoal} info={info} labels={labels} />
+          <GoalBuilder goal={goal} onChange={setGoal} info={info} labels={labels} civ={civInfo} />
         </div>
       </header>
 
@@ -199,6 +218,7 @@ export default function App() {
                 cursor={cursor}
                 onCursor={setCursor}
                 goalTime={goalTime}
+                civIcon={civInfo?.icon}
               />
             )}
             {tab === "list" && view && timeline && (
@@ -211,7 +231,7 @@ export default function App() {
                 orderToml={view.result.order_toml}
               />
             )}
-            {tab === "calc" && mapInfo && <Calculator map={mapInfo} labels={labels} />}
+            {tab === "calc" && mapInfo && <Calculator map={mapInfo} labels={labels} civ={civ} />}
           </div>
         </section>
         {view && plan && timeline && layout && tab !== "calc" && (
@@ -227,6 +247,7 @@ export default function App() {
             map={map}
             goal={view.result.goal}
             plan={plan}
+            civ={civ}
             planBusy={planBusy}
             onPlan={choosePlan}
           />
@@ -234,6 +255,18 @@ export default function App() {
       </main>
 
       {help && <Shortcuts labels={labels} onClose={() => setHelp(false)} />}
+      {civOpen && (
+        <CivPicker
+          civs={civs}
+          current={civ}
+          labels={labels}
+          onClose={() => setCivOpen(false)}
+          onAccept={(id) => {
+            setCivOpen(false);
+            setCiv(id);
+          }}
+        />
+      )}
 
       <footer className="legal">
         Age of Empires II © Microsoft Corporation. IdleZero was created under Microsoft's "

@@ -63,14 +63,25 @@ impl Goal {
 
     /// Valida los nombres contra las reglas.
     pub fn validate(&self, sc: &Scenario) -> Result<(), String> {
+        let civ = sc.civ.as_ref().map_or(String::new(), |c| c.info.names.es.clone());
+        let missing = |what: &str, name: &str| format!("{civ} no tiene {what} {name}");
         for u in &self.units {
-            sc.unit_ref(&u.unit).ok_or(format!("unidad desconocida: {}", u.unit))?;
+            let id = sc.unit_ref(&u.unit).ok_or(format!("unidad desconocida: {}", u.unit))?;
+            if !sc.civ_has_unit(id) {
+                return Err(missing("la unidad", &sc.data.unit(id).unwrap().names.es));
+            }
         }
         for t in &self.techs {
-            sc.tech_ref(t).ok_or(format!("tecnología desconocida: {t}"))?;
+            let id = sc.tech_ref(t).ok_or(format!("tecnología desconocida: {t}"))?;
+            if !sc.civ_has_tech(id) {
+                return Err(missing("la tecnología", &sc.data.tech(id).unwrap().names.es));
+            }
         }
         for b in &self.buildings {
-            sc.building_ref(&b.building).ok_or(format!("edificio desconocido: {}", b.building))?;
+            let id = sc.building_ref(&b.building).ok_or(format!("edificio desconocido: {}", b.building))?;
+            if !sc.civ_has_building(id) {
+                return Err(missing("el edificio", &sc.data.building(id).unwrap().names.es));
+            }
         }
         Ok(())
     }

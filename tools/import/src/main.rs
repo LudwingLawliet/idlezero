@@ -107,6 +107,7 @@ fn main() -> Res<()> {
 
     let (data, votes) = import(&vendor)?;
     copy_icons(&vendor, &root, &data, &votes)?;
+    import_civs(&vendor, &root)?;
     let mut json = serde_json::to_string_pretty(&data)?;
     json.push('\n');
     std::fs::write(&out, json)?;
@@ -321,6 +322,78 @@ fn copy_icons(vendor: &Path, root: &Path, data: &GameData, votes: &HashMap<(Kind
          Game Content Usage Rules de Microsoft: https://www.xbox.com/en-US/developers/rules\n",
     )?;
     eprintln!("{copied} íconos -> {}", out.display());
+    Ok(())
+}
+
+/// Una civilización del juego (modo base, no crónicas).
+#[derive(serde::Serialize)]
+struct CivOut {
+    /// Nombre interno en aoe2techtree ("Huns").
+    id: String,
+    names: Names,
+    /// Texto oficial del juego con sus bonos (sin etiquetas HTML).
+    description: Names,
+    /// Archivo del escudo en app/public/img/civ/.
+    icon: String,
+    units: Vec<u32>,
+    techs: Vec<u32>,
+    buildings: Vec<u32>,
+}
+
+/// Limpia el texto de ayuda del juego: <br> -> salto de línea, sin <b>.
+fn clean_help(s: &str) -> String {
+    let s = s.replace("<br>\n", "\n").replace("<br>", "\n").replace("<b>", "").replace("</b>", "");
+    let lines: Vec<&str> = s.lines().map(str::trim_end).collect();
+    let mut out = lines.join("\n");
+    while out.contains("\n\n\n") {
+        out = out.replace("\n\n\n", "\n\n");
+    }
+    out.trim().to_owned()
+}
+
+/// Exporta data/civs.json (nombre, descripción oficial y árbol de cada
+/// civilización) y copia sus escudos a app/public/img/civ/.
+fn import_civs(vendor: &Path, root: &Path) -> Res<()> {
+    let raw: serde_json::Value = read_json(&vendor.join("data/data.json"))?;
+    let en: HashMap<String, String> = read_json(&vendor.join("data/locales/en/strings.json"))?;
+    let es: HashMap<String, String> = read_json(&vendor.join("data/locales/es/strings.json"))?;
+    let text = |table: &HashMap<String, String>, id: &serde_json::Value| -> String {
+        id.as_u64().and_then(|i| table.get(&i.to_string())).cloned().unwrap_or_default()
+    };
+    let ids = |v: &serde_json::Value| -> Vec<u32> {
+        let mut out: Vec<u32> = v.as_array().map(|a| a.iter().filter_map(|x| x.as_u64().map(|n| n as u32)).collect()).unwrap_or_default();
+        out.sort();
+        out
+    };
+    let out_img = root.join("app/public/img/civ");
+    let _ = std::fs::remove_dir_all(&out_img);
+    std::fs::create_dir_all(&out_img)?;
+    let civs = raw["civs"].as_object().ok_or("data.json sin civs")?;
+    let mut list: Vec<CivOut> = Vec::new();
+    for (id, c) in civs {
+        if c["era"].as_str() != Some("base") {
+            continue;
+        }
+        let icon = format!("{}.png", id.to_lowercase());
+        let src = vendor.join("img/Civs").join(&icon);
+        if src.exists() {
+            std::fs::copy(&src, out_img.join(&icon))?;
+        }
+        list.push(CivOut {
+            id: id.clone(),
+            names: Names { en: text(&en, &c["name_string_id"]), es: text(&es, &c["name_string_id"]) },
+            description: Names { en: clean_help(&text(&en, &c["help_string_id"])), es: clean_help(&text(&es, &c["help_string_id"])) },
+            icon,
+            units: ids(&c["Unit"]),
+            techs: ids(&c["Tech"]),
+            buildings: ids(&c["Building"]),
+        });
+    }
+    list.sort_by(|a, b| a.id.cmp(&b.id));
+    let mut json = serde_json::to_string_pretty(&list)?;
+    json.push('\n');
+    std::fs::write(root.join("data/civs.json"), json)?;
+    eprintln!("{} civilizaciones -> data/civs.json", list.len());
     Ok(())
 }
 

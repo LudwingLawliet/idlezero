@@ -157,6 +157,8 @@ export interface OptResult {
   plans: Plan[];
   simulations: number;
   relaxed: boolean;
+  /** Con civilización: tiempo del mismo objetivo en el escenario neutro. */
+  neutral_time: number | null;
 }
 
 export interface TextEvent {
@@ -198,3 +200,15 @@ export interface CalcResult {
 }
 
 export const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s) % 60).padStart(2, "0")}`;
+
+export interface CivView {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  /** Bonos que el simulador aplica (vacío = solo árbol tecnológico). */
+  simulated: string[];
+  units: number[];
+  techs: number[];
+  buildings: number[];
+}

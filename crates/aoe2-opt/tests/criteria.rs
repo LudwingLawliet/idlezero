@@ -101,3 +101,26 @@ fn presets_are_valid() {
         g.validate(&sc).unwrap_or_else(|e| panic!("{}: {e}", g.id));
     }
 }
+
+#[test]
+fn huns_fast_castle_has_no_houses_and_is_not_slower() {
+    let goal = preset("castle");
+    let neutral = optimize(&base(), &goal, OptConfig::default()).unwrap();
+    let huns = base().with_civ(&repo_data_dir(), "Huns").unwrap();
+    let hun = optimize(&huns, &goal, OptConfig::default()).unwrap();
+    let houses = hun
+        .timeline
+        .events
+        .iter()
+        .filter(|e| matches!(&e.event, aoe2_sim::Event::BuildStarted { building, .. } if building == "house"))
+        .count();
+    assert_eq!(houses, 0, "el árbol de los hunos no debe tener casas");
+    assert!(hun.best.time.unwrap() <= neutral.best.time.unwrap(), "hunos {:?} vs neutro {:?}", hun.best.time, neutral.best.time);
+}
+
+#[test]
+fn civ_tech_tree_is_respected() {
+    let mayans = base().with_civ(&repo_data_dir(), "Mayans").unwrap();
+    let err = optimize(&mayans, &preset("knights_10"), OptConfig::default()).unwrap_err();
+    assert!(err.contains("Caballero"), "{err}");
+}

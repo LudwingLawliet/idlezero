@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Labels, Kind } from "./labels";
-import { Age, AppInfo, Entity, Goal } from "./types";
+import { Age, AppInfo, CivView, Entity, Goal } from "./types";
 
 type AddKind = "age" | "villagers" | Kind;
 const AGES: Age[] = ["Feudal", "Castle", "Imperial"];
@@ -8,7 +8,7 @@ const AGES: Age[] = ["Feudal", "Castle", "Imperial"];
 export const emptyGoal = (): Goal => ({ id: "custom", age: null, villagers: null, units: [], techs: [], buildings: [], allow_tc_idle: false });
 
 /** Objetivo como chips combinables: edad, aldeanos, unidades, tecnologías y edificios. */
-export default function GoalBuilder({ goal, onChange, info, labels }: { goal: Goal; onChange: (g: Goal) => void; info: AppInfo; labels: Labels }) {
+export default function GoalBuilder({ goal, onChange, info, labels, civ }: { goal: Goal; onChange: (g: Goal) => void; info: AppInfo; labels: Labels; civ?: CivView }) {
   const L = labels.ui;
   const [adding, setAdding] = useState<AddKind | null>(null);
   const [query, setQuery] = useState("");
@@ -18,9 +18,14 @@ export default function GoalBuilder({ goal, onChange, info, labels }: { goal: Go
   const options = useMemo(() => {
     if (adding !== "unit" && adding !== "tech" && adding !== "building") return [];
     const list = adding === "unit" ? info.catalog.units : adding === "tech" ? info.catalog.techs : info.catalog.buildings;
+    // Solo lo que tiene el árbol de la civilización elegida.
+    const allowed = civ ? (adding === "unit" ? civ.units : adding === "tech" ? civ.techs : civ.buildings) : null;
     const q = query.trim().toLowerCase();
-    return list.filter((e) => !q || e.name.toLowerCase().includes(q)).slice(0, 40);
-  }, [adding, query, info]);
+    return list
+      .filter((e) => !allowed || allowed.includes(e.id) || (adding === "tech" && e.name.includes("(")))
+      .filter((e) => !q || e.name.toLowerCase().includes(q))
+      .slice(0, 40);
+  }, [adding, query, info, civ]);
 
   const set = (patch: Partial<Goal>) => onChange({ ...goal, id: "custom", ...patch });
   const close = () => {
@@ -38,7 +43,8 @@ export default function GoalBuilder({ goal, onChange, info, labels }: { goal: Go
     close();
   };
 
-  const chips: { key: string; icon: string; text: string; remove: () => void }[] = [];
+  const chips: { key: string; icon: string; text: string; remove: () => void; missing?: boolean }[] = [];
+  const idOf = (list: Entity[], key: string) => list.find((e) => e.key === key || String(e.id) === key)?.id;
   if (goal.age) chips.push({ key: "age", icon: `/img/age/${goal.age}.png`, text: labels.t(`ages.${goal.age}`), remove: () => set({ age: null }) });
   if (goal.villagers)
     chips.push({ key: "vil", icon: "/img/unit/83.png", text: `${goal.villagers} ${L.villagers.toLowerCase()}`, remove: () => set({ villagers: null }) });
@@ -48,6 +54,7 @@ export default function GoalBuilder({ goal, onChange, info, labels }: { goal: Go
       icon: labels.icon("unit", u.unit),
       text: `${u.count} × ${labels.name("unit", u.unit)}`,
       remove: () => set({ units: goal.units.filter((x) => x !== u) }),
+      missing: !!civ && !civ.units.includes(idOf(info.catalog.units, u.unit) ?? -1),
     });
   for (const t of goal.techs)
     chips.push({ key: `t${t}`, icon: labels.icon("tech", t), text: labels.name("tech", t), remove: () => set({ techs: goal.techs.filter((x) => x !== t) }) });
@@ -78,7 +85,7 @@ export default function GoalBuilder({ goal, onChange, info, labels }: { goal: Go
       </select>
       <div className="chips">
         {chips.map((c) => (
-          <span className="chip" key={c.key}>
+          <span className={`chip${c.missing ? " missing" : ""}`} key={c.key} title={c.missing ? `${c.text} ${L.notInCiv}` : undefined}>
             <img src={c.icon} alt="" className="icon small" />
             {c.text}
             <button onClick={c.remove} aria-label="×">

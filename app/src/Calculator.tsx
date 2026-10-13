@@ -7,7 +7,7 @@ import { CalcResult, MapInfo } from "./types";
 const ECO_TECHS = ["double_bit_axe", "bow_saw", "horse_collar", "heavy_plow", "wheelbarrow", "hand_cart", "gold_mining", "stone_mining"];
 
 /** "¿Cuánto junta de verdad?" con el mismo motor de la simulación. */
-export default function Calculator({ map, labels }: { map: MapInfo; labels: Labels }) {
+export default function Calculator({ map, labels, civ }: { map: MapInfo; labels: Labels; civ: string }) {
   const L = labels.ui;
   const [pool, setPool] = useState(map.pools.find((p) => p.id === "forest")?.id ?? map.pools[0].id);
   const [villagers, setVillagers] = useState(1);
@@ -19,7 +19,7 @@ export default function Calculator({ map, labels }: { map: MapInfo; labels: Labe
 
   const run = () => {
     setError(null);
-    invoke<CalcResult>("calculate", { map: map.id, input: { pool, villagers, seconds, drop_site: drop, techs } }).then(setResult, (e) =>
+    invoke<CalcResult>("calculate", { map: map.id, input: { pool, villagers, seconds, drop_site: drop, techs }, civ: civ || null }).then(setResult, (e) =>
       setError(String(e)),
     );
   };

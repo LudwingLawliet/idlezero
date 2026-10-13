@@ -117,6 +117,8 @@ pub struct OptResult {
     /// No hubo forma de cumplir el objetivo sin dejar el CU inactivo: el plan
     /// es el más rápido admitiendo esperas (ver timeline.summary.tc_idle_seconds).
     pub relaxed: bool,
+    /// Con civilización: tiempo del mismo objetivo en el escenario neutro.
+    pub neutral_time: Option<u32>,
 }
 
 pub struct Optimizer<'a> {
@@ -132,6 +134,10 @@ pub struct Optimizer<'a> {
     needs_stone: bool,
     /// Sin plan con el CU siempre activo: se acepta cualquier CU inactivo.
     relaxed: bool,
+    /// Planes conocidos (p. ej. el mejor neutro) que entran como candidatos.
+    seeds: Vec<Vec<Choice>>,
+    /// Cota de tiempo externa para podar el haz cuando no hay plan propio.
+    hint_bound: Option<u32>,
     simulations: std::sync::atomic::AtomicUsize,
 }
 
@@ -265,13 +271,42 @@ impl<'a> Optimizer<'a> {
             per_villager[i] = per_villager[i].max(r);
         }
         let needs_stone = goal.remaining_cost(&sc, &Sim::new(&sc)?.state).stone > 0;
-        Ok(Optimizer { sc, per_villager, goal, cfg, pools, target, needs_stone, relaxed: false, simulations: Default::default() })
+        Ok(Optimizer {
+            sc,
+            per_villager,
+            goal,
+            cfg,
+            pools,
+            target,
+            needs_stone,
+            relaxed: false,
+            seeds: Vec::new(),
+            hint_bound: None,
+            simulations: Default::default(),
+        })
     }
 
     /// Acepta planes con el CU inactivo (si con la regla estricta no hay ninguno).
     pub fn relax(mut self) -> Self {
         self.relaxed = true;
         self
+    }
+
+    /// Planes ya conocidos que se prueban como candidatos (se re-simulan aquí).
+    pub fn with_seeds(mut self, seeds: Vec<Vec<Choice>>) -> Self {
+        self.seeds = seeds;
+        self
+    }
+
+    /// Cota de tiempo para podar el haz si las políticas no encuentran plan.
+    pub fn with_bound(mut self, bound: Option<u32>) -> Self {
+        self.hint_bound = bound;
+        self
+    }
+
+    /// Solo la búsqueda por políticas (rápida): mejor tiempo encontrado.
+    pub fn quick_time(&self) -> Option<u32> {
+        self.policy_search().iter().filter_map(|p| p.time).min()
     }
 
     pub fn scenario(&self) -> &Scenario {
@@ -754,7 +789,7 @@ impl<'a> Optimizer<'a> {
 
     /// Devuelve los planes terminados (mejor primero) y cuántas simulaciones hizo.
     /// `bound`: tiempo de un plan ya conocido; se descartan nodos que no pueden mejorarlo.
-    fn beam(&self, h: Heuristic, bound: Option<u32>) -> (Vec<Plan>, usize) {
+    fn beam(&self, h: Heuristic, bound: Option<u32>, beam_width: usize) -> (Vec<Plan>, usize) {
         let sc: &Scenario = &self.sc;
         let mut root = Sim::new_external(sc).expect("orden base válida");
         let done = self.done_fn();
@@ -765,7 +800,7 @@ impl<'a> Optimizer<'a> {
         let mut sims = 0;
         // Objetivos largos (muchas decisiones): haz más estrecho para acotar el tiempo.
         let levels = bound.map_or(30, |b| (b / 25).max(1) as usize);
-        let width = self.cfg.beam_width.min((self.cfg.beam_width * 30 / levels).max(16));
+        let width = beam_width.min((beam_width * 30 / levels).max(16));
         while !beam.is_empty() {
             // Expandir todos los hijos en paralelo; los resultados se juntan en
             // el mismo orden que las tareas, así que el resultado es determinista.
@@ -850,12 +885,8 @@ impl<'a> Optimizer<'a> {
                     b.map_or(0, |n| n.choices.len())
                 );
             }
-            // Si ya hay un plan terminado mejor que cualquier estimación, parar.
-            if let Some(best) = finished.iter().filter_map(|p| p.time).min() {
-                if beam.iter().all(|n| n.est >= best as f64) {
-                    break;
-                }
-            }
+            // (Sin corte por estimación: la heurística no es exacta y podaría
+            // caminos buenos. La poda por tiempo frente a la cota ya vacía el haz.)
         }
         finished.sort_by(|a, b| {
             a.time.unwrap_or(u32::MAX).cmp(&b.time.unwrap_or(u32::MAX)).then_with(|| a.choices.cmp(&b.choices))
@@ -1011,13 +1042,40 @@ impl<'a> Optimizer<'a> {
             }
         };
         let mut finished = self.policy_search();
+        // Semillas (p. ej. el mejor plan neutro re-simulado con esta civilización).
+        let no_houses = self.sc.civ.as_ref().is_some_and(|c| c.no_houses());
+        for seed in self.seeds.clone() {
+            // Sin casas que construir para quien no las necesita.
+            let seed: Vec<Choice> = seed
+                .into_iter()
+                .map(|c| if no_houses && c.build.as_deref() == Some("house") { Choice { build: None, builders: 0, ..c } } else { c })
+                .collect();
+            let time = self.simulate_choices(&seed, None, false).time;
+            finished.push(Plan { time, choices: seed });
+        }
         lap("políticas");
-        for h in [Heuristic::Simple, Heuristic::Macro] {
-            let bound = finished.iter().filter_map(|p| p.time).min();
-            let (plans, sims) = self.beam(h, bound);
+        // Dos heurísticas y dos anchos de haz: la búsqueda en haz no es
+        // monótona (más ancho no siempre es mejor), así que se combinan.
+        let short = finished.iter().filter_map(|p| p.time).min().or(self.hint_bound).is_some_and(|t| t / 25 <= 26);
+        let mut passes = vec![
+            (Heuristic::Simple, self.cfg.beam_width),
+            (Heuristic::Macro, self.cfg.beam_width),
+            (Heuristic::Simple, self.cfg.beam_width * 2),
+            (Heuristic::Macro, self.cfg.beam_width * 2),
+        ];
+        // Objetivos cortos (pocas decisiones): una pasada más ancha sale barata.
+        if short {
+            passes.push((Heuristic::Simple, self.cfg.beam_width * 4));
+        }
+        for (h, w) in passes {
+            let bound = finished.iter().filter_map(|p| p.time).min().or(self.hint_bound);
+            let (plans, sims) = self.beam(h, bound, w);
             self.simulations.fetch_add(sims, std::sync::atomic::Ordering::Relaxed);
             finished.extend(plans);
-            lap(&format!("haz {h:?}"));
+            lap(&format!(
+                "haz {h:?} ancho {w}: mejor {:?}",
+                finished.iter().filter_map(|p| p.time).min()
+            ));
         }
         let key = |pl: &Plan| pl.time.unwrap_or(u32::MAX);
         finished.sort_by(|a, b| key(a).cmp(&key(b)).then_with(|| a.choices.cmp(&b.choices)));
@@ -1076,6 +1134,7 @@ impl<'a> Optimizer<'a> {
             plans,
             simulations: self.simulations.load(std::sync::atomic::Ordering::Relaxed),
             relaxed: self.relaxed,
+            neutral_time: None,
         }
     }
 

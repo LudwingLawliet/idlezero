@@ -170,6 +170,8 @@ pub struct Effects {
     pub carry_mult: f64,
     pub speed_mult: f64,
     pub farm_food_add: f64,
+    /// Bono "los recursos duran más": multiplica fuentes y granjas.
+    pub source_mult: f64,
 }
 
 #[derive(Debug, Clone)]

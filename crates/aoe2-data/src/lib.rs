@@ -8,12 +8,14 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
 
+pub mod civs;
 pub mod i18n;
 pub mod maps;
 pub mod modifiers;
 pub mod rates;
 pub mod rules;
 
+pub use civs::Civ;
 pub use i18n::Locale;
 pub use maps::MapDef;
 pub use modifiers::Modifiers;

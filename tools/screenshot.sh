@@ -5,6 +5,7 @@
 # Uso: tools/screenshot.sh [--wait SEG] [--no-build] [--click X,Y]... [salida.png]
 #   --click X,Y  hace clic en esa posición antes de capturar (requiere xdotool);
 #                se puede repetir, en orden.
+#   --after SEG  espera tras los clics antes de capturar (por defecto 1).
 # Requiere: xorg-x11-server-Xvfb e ImageMagick (import).
 set -euo pipefail
 
@@ -12,12 +13,14 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 wait_s=5
 build=1
 clicks=()
+after=1
 out=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --wait) wait_s="$2"; shift 2 ;;
     --no-build) build=0; shift ;;
     --click) clicks+=("$2"); shift 2 ;;
+    --after) after="$2"; shift 2 ;;
     *) out="$1"; shift ;;
   esac
 done
@@ -52,6 +55,7 @@ for c in "${clicks[@]}"; do
   DISPLAY="$display" xdotool mousemove --sync "${c%,*}" "${c#*,}" click 1
   sleep 1
 done
+sleep "$after"
 
 import -display "$display" -window root "$out"
 echo "$out"

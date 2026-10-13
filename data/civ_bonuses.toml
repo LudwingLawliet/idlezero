@@ -1,0 +1,82 @@
+# Bonos de civilización que el simulador aplica. Cada bono cita la línea del
+# texto oficial del juego (data/civs.json, sacado de aoe2techtree). Las demás
+# civilizaciones usan solo su árbol tecnológico hasta que se añadan aquí.
+#
+# kind:
+#   no_houses            no necesitan casas (población máxima desde el inicio)
+#   start_resources_add  suma (o resta) recursos al empezar
+#   start_villagers_add  aldeanos extra al empezar
+#   rate_mult            multiplica la tasa de las tareas `tasks`
+#   source_amount_mult   los recursos del mapa (y las granjas) duran más
+#   building_cost_mult   multiplica un recurso del costo de un edificio desde una edad
+#   tech_free            tecnologías gratis
+#   unit_cost_mult       multiplica el costo de unidades según la edad
+schema_version = 1
+
+[[civ]]
+id = "Huns"
+
+[[civ.bonus]]
+kind = "no_houses"
+text = "No necesitan casas, pero comienzan con 100 menos de madera"
+
+[[civ.bonus]]
+kind = "start_resources_add"
+resources = { wood = -100 }
+text = "No necesitan casas, pero comienzan con 100 menos de madera"
+
+[[civ]]
+id = "Britons"
+
+[[civ.bonus]]
+kind = "rate_mult"
+tasks = ["shepherd"]
+value = 1.25
+text = "Los pastores trabajan un +25 % más rápido"
+
+[[civ.bonus]]
+kind = "building_cost_mult"
+building = 109
+resource = "wood"
+value = 0.5
+from_age = "Castle"
+text = "Los centros urbanos cuestan un 50 % menos de madera a partir de la Edad de los Castillos"
+
+[[civ]]
+id = "Franks"
+
+[[civ.bonus]]
+kind = "rate_mult"
+tasks = ["forager"]
+value = 1.15
+text = "Los recolectores trabajan un +15 % más rápido"
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [14, 13, 12]   # Collera, Arado pesado, Rotación de cultivos
+text = "Tecnologías de molino gratuitas"
+
+[[civ]]
+id = "Mayans"
+
+[[civ.bonus]]
+kind = "start_villagers_add"
+value = 1
+text = "Comienzan con 1 aldeano más, pero con 50 menos de comida"
+
+[[civ.bonus]]
+kind = "start_resources_add"
+resources = { food = -50 }
+text = "Comienzan con 1 aldeano más, pero con 50 menos de comida"
+
+[[civ.bonus]]
+kind = "source_amount_mult"
+value = 1.15
+text = "Los recursos duran un 15 % más"
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+units = [4, 24, 492]   # línea del arquero (arquero, ballestero, arbalestero)
+by_age = { Feudal = 0.9, Castle = 0.8, Imperial = 0.7 }
+approximate = true     # "arqueros a pie": se aplica a la línea del arquero
+text = "El coste de los arqueros a pie se reduce un 10 %/20 %/30 % en la Edad Feudal, la Edad de los Castillos y la Edad Imperial"

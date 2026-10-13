@@ -1140,3 +1140,179 @@ kbd {
   padding: 3px 0;
   border-radius: 50%;
 }
+
+/* ---------- civilizaciones ---------- */
+
+.civ-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  text-align: left;
+}
+
+.civ-button img {
+  width: 34px;
+  height: 34px;
+}
+
+.civ-button span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  font-weight: 600;
+}
+
+.civ-button small {
+  font-weight: 400;
+  font-size: 10px;
+}
+
+.civ-neutral {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-size: 18px;
+}
+
+.civ-neutral.big {
+  width: 56px;
+  height: 56px;
+  font-size: 28px;
+}
+
+.civ-picker {
+  width: min(980px, 94vw);
+}
+
+.civ-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.civ-head h2 {
+  margin: 0;
+}
+
+.civ-body {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.civ-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.civ-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  font-size: 12px;
+  background: var(--surface-2);
+}
+
+.civ-cell img {
+  width: 52px;
+  height: 52px;
+}
+
+.civ-cell.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.civ-cell .dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--good);
+}
+
+.civ-detail {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.civ-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.civ-title img {
+  width: 64px;
+  height: 64px;
+}
+
+.civ-title h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.civ-badge {
+  margin: 10px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+.civ-badge.ok {
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+}
+
+.civ-badge.ok ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.civ-badge.pending {
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--warn);
+}
+
+.civ-desc {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.chip.missing {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 14%, transparent);
+}
+
+@media (max-width: 900px) {
+  .civ-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tabs button {
+  white-space: nowrap;
+}
+
+.tabs .map-legend {
+  font-size: 11px;
+  gap: 8px;
+  justify-content: flex-end;
+}
