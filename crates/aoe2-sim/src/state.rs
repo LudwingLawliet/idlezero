@@ -134,6 +134,8 @@ pub struct Site {
     pub at: Option<usize>,
     /// Nº de edificio colocado (para las hipótesis de constructores).
     pub placement: usize,
+    /// Segundo en que se terminó.
+    pub finished: Option<u32>,
 }
 
 /// Un centro urbano y lo que está haciendo.

@@ -515,7 +515,7 @@ impl<'a> Sim<'a> {
     fn new_site(&mut self, building: u32, farm_for: Option<u32>, at: Option<usize>) -> usize {
         let placement = self.placements;
         self.placements += 1;
-        self.state.sites.push(Site { building, progress: 0.0, done: false, farm_for, at, placement });
+        self.state.sites.push(Site { building, progress: 0.0, done: false, farm_for, at, placement, finished: None });
         self.state.sites.len() - 1
     }
 
@@ -1578,6 +1578,7 @@ impl<'a> Sim<'a> {
     fn complete_site(&mut self, site: usize) {
         let now = self.state.time + 1;
         self.state.sites[site].done = true;
+        self.state.sites[site].finished = Some(now);
         let b = self.state.sites[site].building;
         self.state.built.push((b, now));
         let name = self.building_name(b);

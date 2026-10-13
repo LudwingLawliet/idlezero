@@ -30,24 +30,24 @@ impl Default for OptConfig {
 }
 
 /// Lo que se decide al nacer cada aldeano.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, serde::Deserialize)]
 pub struct Choice {
     /// Pool al que va el aldeano.
     pub pool: String,
     /// Investigación de edad que se pide en este momento.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub click: Option<String>,
     /// Dejar de crear aldeanos desde aquí.
-    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub stop: bool,
     /// Clic "duro": el CU para y ahorra para la edad (si el objetivo lo permite).
-    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub hard: bool,
     /// Antes de ir a `pool`, construir este edificio…
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub build: Option<String>,
     /// …con este número de constructores en total.
-    #[serde(skip_serializing_if = "is_zero")]
+    #[serde(default, skip_serializing_if = "is_zero")]
     pub builders: u32,
 }
 
@@ -556,6 +556,25 @@ impl<'a> Optimizer<'a> {
         let time = (done(&sim.state) && self.tc_ok(&sim)).then_some(sim.state.time);
         let clicks = sim.summary().age_clicks.clone();
         Run { time, clicks, decisions, checkpoints }
+    }
+
+    /// Simula un plan completo y devuelve su línea de tiempo (para comparar
+    /// caminos en la interfaz).
+    pub fn plan_timeline(&self, choices: &[Choice]) -> (Option<u32>, Timeline) {
+        let sc: &Scenario = &self.sc;
+        let mut sim = Sim::new_external(sc).expect("orden base válida");
+        let done = |s: &GameState| self.goal.is_done(sc, s);
+        let mut i = 0;
+        while sim.advance(self.cfg.max_seconds, &done).is_some() {
+            let c = choices
+                .get(i)
+                .cloned()
+                .unwrap_or_else(|| Choice::gather(&choices.last().map_or("forest".to_owned(), |c| c.pool.clone())));
+            self.apply(&mut sim, &c);
+            i += 1;
+        }
+        let time = (done(&sim.state) && self.tc_ok(&sim)).then_some(sim.state.time);
+        (time, sim.into_timeline())
     }
 
     /// Tiempo de `choices`, reutilizando el punto de control anterior a la
