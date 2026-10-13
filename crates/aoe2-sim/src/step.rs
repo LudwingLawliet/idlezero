@@ -1028,6 +1028,13 @@ impl<'a> Sim<'a> {
                 }
             }
         }
+        // Edificios pedidos por el objetivo (castillo, CU…): en cuanto se pueda.
+        for t in auto.buildings.clone() {
+            let Some(b) = self.sc.building_ref(&t.building) else { continue };
+            if (self.state.count_planned(b) as u32) < t.count && self.building_available(b) && self.ensure_prerequisites(b) {
+                self.place_building(b, 3, from, None, None, true);
+            }
+        }
         // Producción: mantener los edificios productores.
         if let Some(prod) = auto.production.clone() {
             let unit = self.sc.unit_ref(&prod.unit).unwrap();

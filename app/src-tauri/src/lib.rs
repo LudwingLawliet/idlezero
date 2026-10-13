@@ -57,6 +57,10 @@ struct Catalog {
 struct Preset {
     id: String,
     name: String,
+    /// Qué es, cuándo se usa y la idea clave.
+    description: String,
+    category: String,
+    category_name: String,
     goal: Goal,
 }
 
@@ -98,7 +102,17 @@ fn app_info(lang: String) -> AppInfo {
     let presets = b
         .goals
         .iter()
-        .map(|g| Preset { id: g.id.clone(), name: l.t(&format!("goals.{}", g.id)), goal: g.clone() })
+        .map(|g| {
+            let category = g.category.clone().unwrap_or_else(|| "fast".into());
+            Preset {
+                id: g.id.clone(),
+                name: l.t(&format!("goals.{}", g.id)),
+                description: l.t(&format!("goal_desc.{}", g.id)),
+                category_name: l.t(&format!("goal_cat.{category}")),
+                category,
+                goal: g.clone(),
+            }
+        })
         .collect();
     let langs = bundle::LANGS
         .iter()

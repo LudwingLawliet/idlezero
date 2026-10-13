@@ -1,28 +1,72 @@
-# Objetivos predefinidos para la interfaz y la CLI. Los textos están en
-# data/i18n (sección goals). Un objetivo se cumple cuando todo lo pedido está.
+# Objetivos y estrategias predefinidos. Los nombres y las explicaciones están
+# en data/i18n (secciones goals y goal_desc). Un objetivo se cumple cuando
+# todo lo pedido está. category: rush, fast (rápido a una edad), boom, units.
+#
+# Las estrategias calculan la ECONOMÍA necesaria para tener esas unidades o
+# edificios a tiempo; el combate, la caminata hasta el rival y el micro no se
+# simulan.
+
 [[goal]]
 id = "feudal"
+category = "fast"
 age = "Feudal"
 
 [[goal]]
 id = "castle"
+category = "fast"
 age = "Castle"
 
 [[goal]]
 id = "imperial"
+category = "fast"
 age = "Imperial"
 allow_tc_idle = true   # para Imperial se suele parar el CU unos segundos y ahorrar
 
 [[goal]]
+id = "drush"
+category = "rush"
+age = "Feudal"
+units = [{ unit = "militia", count = 3 }]
+
+[[goal]]
+id = "scouts"
+category = "rush"
+age = "Feudal"
+units = [{ unit = "scout_cavalry", count = 3 }]
+
+[[goal]]
+id = "archers_feudal"
+category = "rush"
+age = "Feudal"
+units = [{ unit = "archer", count = 6 }]
+techs = ["fletching"]
+
+[[goal]]
+id = "castle_drop"
+category = "rush"
+age = "Castle"
+buildings = [{ building = "82", count = 1 }]   # Castillo (650 de piedra)
+
+[[goal]]
+id = "boom_3tc"
+category = "boom"
+age = "Castle"
+villagers = 40
+buildings = [{ building = "town_center", count = 3 }]
+
+[[goal]]
 id = "villagers_30_feudal"
+category = "boom"
 age = "Feudal"
 villagers = 30
 
 [[goal]]
 id = "archers_20"
+category = "units"
 units = [{ unit = "archer", count = 20 }]
 techs = ["fletching"]
 
 [[goal]]
 id = "knights_10"
+category = "units"
 units = [{ unit = "knight", count = 10 }]

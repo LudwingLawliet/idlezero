@@ -234,6 +234,11 @@ pub fn policy_order(base: &Scenario, goal: &Goal) -> BuildOrder {
                 count: u.count,
                 buildings: crate::goal::PRODUCTION_BUILDINGS,
             }),
+            buildings: goal
+                .buildings
+                .iter()
+                .map(|b| aoe2_sim::orders::BuildingTarget { building: b.building.clone(), count: b.count })
+                .collect(),
         },
     }
 }

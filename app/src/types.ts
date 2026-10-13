@@ -31,6 +31,7 @@ export interface Entity {
 
 export interface Goal {
   id: string;
+  category?: string | null;
   age?: Age | null;
   villagers?: number | null;
   units: { unit: string; count: number }[];
@@ -43,7 +44,7 @@ export interface AppInfo {
   version: string;
   source_commit: string;
   maps: MapInfo[];
-  presets: { id: string; name: string; goal: Goal }[];
+  presets: { id: string; name: string; description: string; category: string; category_name: string; goal: Goal }[];
   langs: Named[];
   labels: Record<string, string>;
   catalog: { units: Entity[]; techs: Entity[]; buildings: Entity[] };

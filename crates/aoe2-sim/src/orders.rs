@@ -61,6 +61,16 @@ pub struct Auto {
     /// Producción continua de una unidad.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub production: Option<Production>,
+    /// Edificios a construir en cuanto la edad y los recursos lo permitan
+    /// (los que pide el objetivo, p. ej. un castillo).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub buildings: Vec<BuildingTarget>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BuildingTarget {
+    pub building: String,
+    pub count: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

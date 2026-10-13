@@ -67,6 +67,7 @@ export default function GoalBuilder({ goal, onChange, info, labels, civ }: { goa
     });
 
   const needsQty = adding === "villagers" || adding === "unit" || adding === "building";
+  const preset = info.presets.find((p) => p.id === goal.id);
   return (
     <div className="goal-builder">
       <select
@@ -77,10 +78,16 @@ export default function GoalBuilder({ goal, onChange, info, labels, civ }: { goa
         }}
       >
         <option value="">{L.presets}</option>
-        {info.presets.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
+        {[...new Set(info.presets.map((p) => p.category))].map((cat) => (
+          <optgroup key={cat} label={info.presets.find((p) => p.category === cat)!.category_name}>
+            {info.presets
+              .filter((p) => p.category === cat)
+              .map((p) => (
+                <option key={p.id} value={p.id} title={p.description}>
+                  {p.name}
+                </option>
+              ))}
+          </optgroup>
         ))}
       </select>
       <div className="chips">
@@ -104,6 +111,11 @@ export default function GoalBuilder({ goal, onChange, info, labels, civ }: { goa
           </select>
         </span>
       </div>
+      {preset && (
+        <p className="preset-desc" title={L.strategyNote}>
+          <strong>{preset.name}:</strong> {preset.description}
+        </p>
+      )}
       <label className="check">
         <input type="checkbox" checked={goal.allow_tc_idle} onChange={(e) => set({ allow_tc_idle: e.target.checked })} />
         {L.allowIdle}

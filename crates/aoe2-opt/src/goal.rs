@@ -13,6 +13,9 @@ pub const PRODUCTION_BUILDINGS: u32 = 2;
 pub struct Goal {
     #[serde(default)]
     pub id: String,
+    /// Grupo en el selector de plantillas (fast, rush, boom, units).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
     pub age: Option<Age>,
     pub villagers: Option<u32>,
     #[serde(default)]
