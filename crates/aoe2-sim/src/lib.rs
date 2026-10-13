@@ -9,6 +9,7 @@
 //! ni bonos de civilización.
 
 pub mod orders;
+pub mod report;
 pub mod scenario;
 pub mod state;
 pub mod step;

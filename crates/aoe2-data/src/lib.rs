@@ -8,11 +8,13 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
 
+pub mod i18n;
 pub mod maps;
 pub mod modifiers;
 pub mod rates;
 pub mod rules;
 
+pub use i18n::Locale;
 pub use maps::MapDef;
 pub use modifiers::Modifiers;
 pub use rates::GatherRates;
@@ -71,6 +73,16 @@ impl fmt::Display for Cost {
 pub struct Names {
     pub en: String,
     pub es: String,
+}
+
+impl Names {
+    /// Nombre en `lang`; inglés si el idioma no está.
+    pub fn get(&self, lang: &str) -> &str {
+        match lang {
+            "es" => &self.es,
+            _ => &self.en,
+        }
+    }
 }
 
 /// Dónde y cuándo está disponible una entidad en el árbol tecnológico.

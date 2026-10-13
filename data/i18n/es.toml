@@ -1,0 +1,65 @@
+# Textos en español (idioma por defecto). Las claves deben existir también en
+# los demás idiomas (lo verifica un test). Nombres de edificios y tecnologías
+# salen de game_data.json (names.es).
+[meta]
+name = "Español"
+
+[pools]
+sheep = "ovejas"
+boar = "jabalí"
+berries = "bayas"
+deer = "ciervos"
+forest = "madera"
+gold = "oro"
+stone = "piedra"
+farms = "granjas"
+build = "construyendo"
+idle = "ocioso"
+
+[resources]
+food = "comida"
+wood = "madera"
+gold = "oro"
+stone = "piedra"
+
+[resources_short]
+food = "C"
+wood = "M"
+gold = "O"
+stone = "P"
+
+[ages]
+Dark = "Edad Oscura"
+Feudal = "Edad Feudal"
+Castle = "Edad de los Castillos"
+Imperial = "Edad Imperial"
+
+[idle]
+housed = "falta casa"
+no_food = "falta comida"
+waiting_research = "esperando para investigar"
+no_order = "sin más aldeanos en la orden"
+
+[events]
+villager_created = "aldeano {n} → {task}"
+villager_builds = "aldeano {n} construye {building} → {task}"
+build_started = "se coloca {building} · constructores: {builders}"
+build_finished = "construcción terminada: {building}"
+research_started = "investiga {tech}"
+research_finished = "investigación terminada: {tech}"
+age_reached = "*** {age} ***"
+moved = "{count} aldeanos {from} → {to}"
+pool_exhausted = "fuente agotada: {pool}"
+lured = "aldeano {n} atrae {source}"
+tc_idle = "CU inactivo {seconds} s ({cause})"
+unit_trained = "unidad entrenada: {unit} ({count})"
+
+[report]
+tick = "Tick"
+pop = "pob"
+summary = "Resumen"
+click = "clic en {age}"
+reached = "llega a {age}"
+tc_idle = "CU inactivo"
+villager_idle = "aldeanos ociosos (aldeano·s)"
+gathered = "recolectado"

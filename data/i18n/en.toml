@@ -1,0 +1,63 @@
+# English texts. Keys must match es.toml (checked by a test).
+[meta]
+name = "English"
+
+[pools]
+sheep = "sheep"
+boar = "boar"
+berries = "berries"
+deer = "deer"
+forest = "wood"
+gold = "gold"
+stone = "stone"
+farms = "farms"
+build = "building"
+idle = "idle"
+
+[resources]
+food = "food"
+wood = "wood"
+gold = "gold"
+stone = "stone"
+
+[resources_short]
+food = "F"
+wood = "W"
+gold = "G"
+stone = "S"
+
+[ages]
+Dark = "Dark Age"
+Feudal = "Feudal Age"
+Castle = "Castle Age"
+Imperial = "Imperial Age"
+
+[idle]
+housed = "housed"
+no_food = "not enough food"
+waiting_research = "waiting to research"
+no_order = "no more villagers in the order"
+
+[events]
+villager_created = "villager {n} → {task}"
+villager_builds = "villager {n} builds {building} → {task}"
+build_started = "{building} placed · builders: {builders}"
+build_finished = "{building} finished"
+research_started = "researching {tech}"
+research_finished = "{tech} done"
+age_reached = "*** {age} ***"
+moved = "{count} villagers {from} → {to}"
+pool_exhausted = "{pool} depleted"
+lured = "villager {n} lures {source}"
+tc_idle = "TC idle {seconds} s ({cause})"
+unit_trained = "{unit} trained ({count})"
+
+[report]
+tick = "Tick"
+pop = "pop"
+summary = "Summary"
+click = "{age} click"
+reached = "{age} reached"
+tc_idle = "TC idle"
+villager_idle = "idle villagers (villager·s)"
+gathered = "gathered"

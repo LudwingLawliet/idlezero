@@ -198,3 +198,26 @@ fn modifiers_reference_existing_techs_and_tasks() {
     assert_eq!(dba.len(), 1);
     assert_eq!(dba[0].value, 1.20);
 }
+
+#[test]
+fn i18n_keys_match_across_languages_and_cover_map_pools() {
+    use aoe2_data::Locale;
+    use std::collections::BTreeSet;
+    let dir = repo_data_dir();
+    let langs: Vec<String> = std::fs::read_dir(dir.join("i18n"))
+        .unwrap()
+        .map(|e| e.unwrap().path().file_stem().unwrap().to_string_lossy().into_owned())
+        .collect();
+    assert!(langs.contains(&"es".to_owned()) && langs.contains(&"en".to_owned()));
+    let es: BTreeSet<String> = Locale::load(&dir, "es").unwrap().keys().map(str::to_owned).collect();
+    for lang in &langs {
+        let keys: BTreeSet<String> = Locale::load(&dir, lang).unwrap().keys().map(str::to_owned).collect();
+        assert_eq!(keys, es, "claves de {lang} distintas a las de es");
+    }
+    for file in ["laboratorio.toml", "arabia_neutra.toml"] {
+        let map = MapDef::load(&dir.join("maps").join(file)).unwrap();
+        for s in &map.sources {
+            assert!(es.contains(&format!("pools.{}", s.pool())), "falta traducción del pool {}", s.pool());
+        }
+    }
+}
