@@ -174,3 +174,48 @@ for civ, items in sorted(S.items()):
         out.append(f'\n[[civ.bonus]]\n{body}\ntext = "{line_es}"\n# {line_en}\n')
 open(f'{root}/data/civ_bonuses.toml', 'w').write(''.join(out))
 print(len(S), 'civilizaciones con bonos simulados')
+
+
+# --- Bonos militares (pestaña Batalla) -> data/combat_civ_bonuses.toml ---
+MOUNTED = '{ categories = ["cavalry", "cav_archers"] }'
+B = {
+ "Franks": [("Mounted Units +20% HP", MOUNTED, '{ Feudal = { hp_mult = 1.2 } }')],
+ "Britons": [("Foot Archers +1/+2 range", '{ categories = ["archers"] }', '{ Castle = { range = 1 }, Imperial = { range = 2 } }')],
+ "Burmese": [("Infantry +1/+2/+3 attack", '{ categories = ["infantry"] }', '{ Feudal = { melee_attack = 1 }, Castle = { melee_attack = 2 }, Imperial = { melee_attack = 3 } }'),
+             ("Battle Elephants +1 melee", '{ units = [1132, 1134] }', '{ Dark = { melee_armor = 1, pierce_armor = 1 } }')],
+ "Teutons": [("Infantry and Mounted Units +1/+2 melee armor", '{ categories = ["infantry", "cavalry", "cav_archers"] }', '{ Castle = { melee_armor = 1 }, Imperial = { melee_armor = 2 } }')],
+ "Vikings": [("Infantry +20% HP", '{ categories = ["infantry"] }', '{ Feudal = { hp_mult = 1.2 } }')],
+ "Japanese": [("Infantry attacks +33% faster", '{ categories = ["infantry"] }', '{ Feudal = { reload_mult = 1.33 } }')],
+ "Mongols": [("Cavalry Archers attack +25% faster", '{ categories = ["cav_archers"] }', '{ Dark = { reload_mult = 1.25 } }'),
+             ("Scout Cavalry-line and Steppe Lancers", '{ units = [448, 546, 441] }', '{ Castle = { hp_mult = 1.2 }, Imperial = { hp_mult = 1.3 } }')],
+ "Malians": [("Barracks Units +1/+2/+3 pierce armor", '{ trained_at = [12] }', '{ Feudal = { pierce_armor = 1 }, Castle = { pierce_armor = 2 }, Imperial = { pierce_armor = 3 } }')],
+ "Italians": [("Foot Archers and Condottieri", '{ categories = ["archers"] }', '{ Dark = { melee_armor = 1, pierce_armor = 1 } }')],
+ "Ethiopians": [("Foot Archers attack +18% faster", '{ categories = ["archers"] }', '{ Dark = { reload_mult = 1.18 } }')],
+ "Saracens": [("Camel Units +25% HP", '{ classes = [30] }', '{ Dark = { hp_mult = 1.25 } }')],
+ "Turks": [("Gunpowder Units +25% HP", '{ classes = [23] }', '{ Dark = { hp_mult = 1.25 } }'),
+           ("Scout Cavalry-line +1 pierce armor", '{ units = [448, 546, 441] }', '{ Dark = { pierce_armor = 1 } }')],
+ "Hindustanis": [("Camel Riders attack +20% faster", '{ units = [329, 330, 207] }', '{ Dark = { reload_mult = 1.2 } }'),
+                 ("Gunpowder Units +1 melee", '{ classes = [23] }', '{ Dark = { melee_armor = 1, pierce_armor = 1 } }')],
+ "Celts": [("Infantry moves", '{ categories = ["infantry"] }', '{ Dark = { speed_mult = 1.05 }, Feudal = { speed_mult = 1.10 }, Castle = { speed_mult = 1.15 }, Imperial = { speed_mult = 1.20 } }')],
+ "Lithuanians": [("Spearman-line and Skirmisher-line move", '{ units = [93, 358, 359, 7, 6] }', '{ Dark = { speed_mult = 1.10 } }')],
+ "Cumans": [("Mounted Units move", MOUNTED, '{ Feudal = { speed_mult = 1.05 }, Castle = { speed_mult = 1.10 }, Imperial = { speed_mult = 1.15 } }')],
+ "Mapuche": [("Infantry, Slingers and Skirmishers", '{ categories = ["infantry"], units = [7, 6] }', '{ Feudal = { hp = 5 }, Castle = { hp = 10 }, Imperial = { hp = 15 } }')],
+ "Muisca": [("Archery Range Units +1/2/3 melee armor", '{ trained_at = [87] }', '{ Feudal = { melee_armor = 1 }, Castle = { melee_armor = 2 }, Imperial = { melee_armor = 3 } }')],
+}
+HEAD = """# Bonos militares de civilización para la pestaña Batalla (generado por
+# tools/gen_bonuses.py; editar el script). Mismo formato de efectos que
+# data/combat_upgrades.toml, por edad (el de la última edad alcanzada).
+schema_version = 1
+"""
+bout = [HEAD]
+for civ, items in sorted(B.items()):
+    c = next(x for x in d if x['id'] == civ)
+    en, te = bullets(c['description']['en'])
+    es, ts = bullets(c['description']['es'])
+    for key, applies, by_age in items:
+        hits = [i for i, l in enumerate(en) if key in l]
+        assert len(hits) == 1, (civ, key, en)
+        line = es[hits[0]].replace('"', '\\"')
+        bout.append(f'\n[[civ]]\nid = "{civ}"\napplies = {applies}\nby_age = {by_age}\ntext = "{line}"\n# {en[hits[0]]}\n')
+open(f'{root}/data/combat_civ_bonuses.toml', 'w').write(''.join(bout))
+print(len(B), 'civilizaciones con bonos militares')

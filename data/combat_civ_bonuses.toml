@@ -1,0 +1,158 @@
+# Bonos militares de civilización para la pestaña Batalla (generado por
+# tools/gen_bonuses.py; editar el script). Mismo formato de efectos que
+# data/combat_upgrades.toml, por edad (el de la última edad alcanzada).
+schema_version = 1
+
+[[civ]]
+id = "Britons"
+applies = { categories = ["archers"] }
+by_age = { Castle = { range = 1 }, Imperial = { range = 2 } }
+text = "Los arqueros a pie ganan +1/+2 de alcance en la Edad de los Castillos y la Edad Imperial"
+# Foot Archers +1/+2 range in Castle/Imperial Age
+
+[[civ]]
+id = "Burmese"
+applies = { categories = ["infantry"] }
+by_age = { Feudal = { melee_attack = 1 }, Castle = { melee_attack = 2 }, Imperial = { melee_attack = 3 } }
+text = "La infantería obtiene +1/2/3 de ataque en las edades Feudal/de los Castillos/Imperial"
+# Infantry +1/+2/+3 attack in Feudal/Castle/Imperial Age
+
+[[civ]]
+id = "Burmese"
+applies = { units = [1132, 1134] }
+by_age = { Dark = { melee_armor = 1, pierce_armor = 1 } }
+text = "Elefantes de combate: +1 de armadura cuerpo a cuerpo/+1 de armadura antiperforación"
+# Battle Elephants +1 melee/+1 pierce armor
+
+[[civ]]
+id = "Celts"
+applies = { categories = ["infantry"] }
+by_age = { Dark = { speed_mult = 1.05 }, Feudal = { speed_mult = 1.10 }, Castle = { speed_mult = 1.15 }, Imperial = { speed_mult = 1.20 } }
+text = "La infantería se mueve un 5/10/15/20 % más rápido en la Edad Oscura, la Edad Feudal, la Edad de los Castillos y la Edad Imperial, ,respectivamente"
+# Infantry moves +5/10/15/20% faster in Dark/Feudal/ Castle/Imperial Age
+
+[[civ]]
+id = "Cumans"
+applies = { categories = ["cavalry", "cav_archers"] }
+by_age = { Feudal = { speed_mult = 1.05 }, Castle = { speed_mult = 1.10 }, Imperial = { speed_mult = 1.15 } }
+text = "Las unidades montadas se mueven un 5/10/15 % más rápido en la Edad Feudal/ Edad de los Castillos/Edad Imperial"
+# Mounted Units move +5/10/15% faster in Feudal/ Castle/Imperial Age
+
+[[civ]]
+id = "Ethiopians"
+applies = { categories = ["archers"] }
+by_age = { Dark = { reload_mult = 1.18 } }
+text = "Los arqueros atacan un 18 % más rápido"
+# Foot Archers attack +18% faster
+
+[[civ]]
+id = "Franks"
+applies = { categories = ["cavalry", "cav_archers"] }
+by_age = { Feudal = { hp_mult = 1.2 } }
+text = "Las unidades montadas ganan un +20 % más de PR a partir de la Edad Feudal"
+# Mounted Units +20% HP starting in Feudal Age
+
+[[civ]]
+id = "Hindustanis"
+applies = { units = [329, 330, 207] }
+by_age = { Dark = { reload_mult = 1.2 } }
+text = "Los jinetes de camello atacan un 20 % más rápido"
+# Camel Riders attack +20% faster
+
+[[civ]]
+id = "Hindustanis"
+applies = { classes = [23] }
+by_age = { Dark = { melee_armor = 1, pierce_armor = 1 } }
+text = "Las unidades de pólvora obtienen +1 de armadura/+1 de armadura antiperforación"
+# Gunpowder Units +1 melee/+1 pierce armor
+
+[[civ]]
+id = "Italians"
+applies = { categories = ["archers"] }
+by_age = { Dark = { melee_armor = 1, pierce_armor = 1 } }
+text = "Los arqueros a pie y los condotieri obtienen +1 de armadura cuerpo a cuerpo y +1 de armadura antiperforación"
+# Foot Archers and Condottieri +1 melee/+1 pierce armor
+
+[[civ]]
+id = "Japanese"
+applies = { categories = ["infantry"] }
+by_age = { Feudal = { reload_mult = 1.33 } }
+text = "La infantería ataca un +33 % más rápido a partir de la Edad Feudal"
+# Infantry attacks +33% faster starting in Feudal Age
+
+[[civ]]
+id = "Lithuanians"
+applies = { units = [93, 358, 359, 7, 6] }
+by_age = { Dark = { speed_mult = 1.10 } }
+text = "Los lanceros y guerrilleros se mueven un 10 % más rápido"
+# Spearman-line and Skirmisher-line move +10% faster
+
+[[civ]]
+id = "Malians"
+applies = { trained_at = [12] }
+by_age = { Feudal = { pierce_armor = 1 }, Castle = { pierce_armor = 2 }, Imperial = { pierce_armor = 3 } }
+text = "Las unidades de los cuarteles obtienen +1 de armadura antiperforación en la Edad Feudal, +2 en la Edad de los Castillos y +3 en la Edad Imperial"
+# Barracks Units +1/+2/+3 pierce armor in Feudal/ Castle/Imperial Age
+
+[[civ]]
+id = "Mapuche"
+applies = { categories = ["infantry"], units = [7, 6] }
+by_age = { Feudal = { hp = 5 }, Castle = { hp = 10 }, Imperial = { hp = 15 } }
+text = "La infantería, los soldados con honda y los guerrilleros reciben 5/10/15 PS en la Edad Feudal/de los Castillos/Imperial"
+# Infantry, Slingers and Skirmishers +5/10/15 HP in Feudal/Castle/Imperial Age
+
+[[civ]]
+id = "Mongols"
+applies = { categories = ["cav_archers"] }
+by_age = { Dark = { reload_mult = 1.25 } }
+text = "Los arqueros a caballo atacan un 25 % más rápido"
+# Cavalry Archers attack +25% faster
+
+[[civ]]
+id = "Mongols"
+applies = { units = [448, 546, 441] }
+by_age = { Castle = { hp_mult = 1.2 }, Imperial = { hp_mult = 1.3 } }
+text = "La línea de caballería de exploración y los lanceros esteparios cuentan con un 20/30 % de PR más en la Edad de los Castillos y la Edad Imperial"
+# Scout Cavalry-line and Steppe Lancers +20/30% HP in Castle/Imperial Age
+
+[[civ]]
+id = "Muisca"
+applies = { trained_at = [87] }
+by_age = { Feudal = { melee_armor = 1 }, Castle = { melee_armor = 2 }, Imperial = { melee_armor = 3 } }
+text = "Los guerreros champi y las unidades de la galería de tiro con arco reciben +1/2/3 de armadura cuerpo a cuerpo en la Edad Feudal/de los Castillos/Imperial"
+# Champi Warriors and Archery Range Units +1/2/3 melee armor in Feudal/Castle/Imperial Age
+
+[[civ]]
+id = "Saracens"
+applies = { classes = [30] }
+by_age = { Dark = { hp_mult = 1.25 } }
+text = "Las unidades a camello ganan un 25 % más de PR"
+# Camel Units +25% HP
+
+[[civ]]
+id = "Teutons"
+applies = { categories = ["infantry", "cavalry", "cav_archers"] }
+by_age = { Castle = { melee_armor = 1 }, Imperial = { melee_armor = 2 } }
+text = "Las unidades de infantería y a caballo ganan +1/+2 de armadura cuerpo a cuerpo en la Edad de los Castillos y la Edad Imperial, respectivamente"
+# Infantry and Mounted Units +1/+2 melee armor in Castle/Imperial Age
+
+[[civ]]
+id = "Turks"
+applies = { classes = [23] }
+by_age = { Dark = { hp_mult = 1.25 } }
+text = "Las unidades de pólvora obtienen un 25 % más de PR"
+# Gunpowder Units +25% HP
+
+[[civ]]
+id = "Turks"
+applies = { units = [448, 546, 441] }
+by_age = { Dark = { pierce_armor = 1 } }
+text = "La caballería de exploración obtiene 1 de armadura antiperforación y mejoras gratis"
+# Scout Cavalry-line +1 pierce armor and upgrades free
+
+[[civ]]
+id = "Vikings"
+applies = { categories = ["infantry"] }
+by_age = { Feudal = { hp_mult = 1.2 } }
+text = "La infantería gana un 20 % más de PR a partir de la Edad Feudal"
+# Infantry +20% HP starting in Feudal Age

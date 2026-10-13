@@ -52,6 +52,8 @@ name = "aoe2-battle"
 version = "0.3.0"
 dependencies = [
  "aoe2-data",
+ "serde",
+ "toml 1.1.8+spec-1.1.0",
 ]
 
 [[package]]

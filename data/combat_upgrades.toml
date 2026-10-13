@@ -1,0 +1,136 @@
+# Mejoras de combate que usa la pestaña Batalla (crates/aoe2-battle).
+# Valores de AoE2 DE según la wiki de la comunidad (ageofempires.fandom.com,
+# páginas de cada tecnología); los marcados `approximate` simplifican el efecto.
+# Las mejoras de unidad (Ballestero, Caballero…) no van aquí: se usa la unidad
+# mejorada directamente.
+#
+# applies: a quién afecta; cualquiera de
+#   categories (infantry, archers, cav_archers, cavalry, siege, monks, ships),
+#   units (ids), trained_at (edificio que la entrena), classes (de armadura).
+# Efectos: melee_attack, pierce_attack, melee_armor, pierce_armor, range, hp,
+#   hp_mult, reload_mult (>1 = ataca más rápido), speed_mult, accuracy (%).
+schema_version = 1
+
+# --- Herrería: arqueros ---
+[[tech]]
+id = 199 # Emplumado de flechas
+applies = { categories = ["archers", "cav_archers"] }
+pierce_attack = 1
+range = 1
+
+[[tech]]
+id = 200 # Flecha de punzón
+applies = { categories = ["archers", "cav_archers"] }
+pierce_attack = 1
+range = 1
+
+[[tech]]
+id = 201 # Brazal
+applies = { categories = ["archers", "cav_archers"] }
+pierce_attack = 1
+range = 1
+
+[[tech]]
+id = 211 # Armadura acolchada para arqueros
+applies = { categories = ["archers", "cav_archers"] }
+melee_armor = 1
+pierce_armor = 1
+
+[[tech]]
+id = 212 # Armadura de cuero para arqueros
+applies = { categories = ["archers", "cav_archers"] }
+melee_armor = 1
+pierce_armor = 1
+
+[[tech]]
+id = 219 # Armadura de anillas para arqueros
+applies = { categories = ["archers", "cav_archers"] }
+melee_armor = 1
+pierce_armor = 2
+
+# --- Herrería: cuerpo a cuerpo ---
+[[tech]]
+id = 67 # Forja
+applies = { categories = ["infantry", "cavalry"] }
+melee_attack = 1
+
+[[tech]]
+id = 68 # Fundición
+applies = { categories = ["infantry", "cavalry"] }
+melee_attack = 1
+
+[[tech]]
+id = 75 # Alto horno
+applies = { categories = ["infantry", "cavalry"] }
+melee_attack = 2
+
+[[tech]]
+id = 74 # Cota de escamas
+applies = { categories = ["infantry"] }
+melee_armor = 1
+pierce_armor = 1
+
+[[tech]]
+id = 76 # Cota de malla
+applies = { categories = ["infantry"] }
+melee_armor = 1
+pierce_armor = 1
+
+[[tech]]
+id = 77 # Cota de placas
+applies = { categories = ["infantry"] }
+melee_armor = 1
+pierce_armor = 2
+
+[[tech]]
+id = 81 # Barda de escamas
+applies = { categories = ["cavalry"] }
+melee_armor = 1
+pierce_armor = 1
+
+[[tech]]
+id = 82 # Barda de malla
+applies = { categories = ["cavalry"] }
+melee_armor = 1
+pierce_armor = 1
+
+[[tech]]
+id = 80 # Barda de placas
+applies = { categories = ["cavalry"] }
+melee_armor = 1
+pierce_armor = 2
+
+# --- Otras ---
+[[tech]]
+id = 435 # Línea de sangre
+applies = { categories = ["cavalry", "cav_archers"] }
+hp = 20
+
+[[tech]]
+id = 39 # Cría de animales
+applies = { categories = ["cavalry", "cav_archers"] }
+speed_mult = 1.10
+
+[[tech]]
+id = 215 # Escuderos
+applies = { categories = ["infantry"] }
+speed_mult = 1.10
+
+[[tech]]
+id = 437 # Anillo del arquero
+applies = { categories = ["archers", "cav_archers"] }
+accuracy = 100
+reload_mult = 1.18
+approximate = true
+
+[[tech]]
+id = 436 # Tácticas partas
+applies = { categories = ["cav_archers"] }
+melee_armor = 1
+pierce_armor = 2
+approximate = true # el bono contra lanceros no se simula
+
+[[tech]]
+id = 875 # Gambesones
+applies = { units = [74, 75, 77, 473, 567] }
+pierce_armor = 1
