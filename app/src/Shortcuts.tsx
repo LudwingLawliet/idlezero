@@ -13,7 +13,7 @@ export default function Shortcuts({ labels, onClose }: { labels: Labels; onClose
     [L.keyHome, L.keyHomeDesc],
     [L.keyEnd, L.keyEndDesc],
     ["Esc", L.keyEsc],
-    ["1 · 2 · 3 · 4", L.keyTabs],
+    ["1 · 2 · 3 · 4 · 5", L.keyTabs],
     ["Ctrl + Enter", L.keyCalc],
     ["C", L.keyCiv],
     ["?", L.keyHelp],

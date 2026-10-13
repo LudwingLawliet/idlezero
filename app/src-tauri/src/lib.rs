@@ -1,3 +1,4 @@
+mod battle;
 mod bundle;
 
 use aoe2_data::Age;
@@ -256,7 +257,7 @@ struct OptimizeView {
 }
 
 /// Corre trabajo pesado fuera del hilo de la interfaz.
-async fn blocking<T: Send + 'static>(f: impl FnOnce() -> Result<T, String> + Send + 'static) -> Result<T, String> {
+pub(crate) async fn blocking<T: Send + 'static>(f: impl FnOnce() -> Result<T, String> + Send + 'static) -> Result<T, String> {
     tauri::async_runtime::spawn_blocking(f).await.map_err(|e| e.to_string())?
 }
 
@@ -577,7 +578,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![app_info, civs, unit_card, optimize, simulate_plan, builders_what_if, calculate])
+        .invoke_handler(tauri::generate_handler![app_info, civs, unit_card, battle::battle, battle::strategy_duel, optimize, simulate_plan, builders_what_if, calculate])
         .run(tauri::generate_context!())
         .expect("error al iniciar la aplicación Tauri");
 }

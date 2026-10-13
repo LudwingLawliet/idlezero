@@ -89,6 +89,7 @@ pub struct Benchmarks {
 }
 
 pub struct Bundle {
+    pub combat: aoe2_battle::CombatRules,
     pub benchmarks: Benchmarks,
     pub classes: ArmorClasses,
     pub upgrade_groups: Vec<UpgradeGroup>,
@@ -113,6 +114,12 @@ pub fn bundle() -> &'static Bundle {
         tips: parse::<TipsFile>("tips", data!("tips.toml")).tip,
         classes: parse("armor_classes", data!("armor_classes.toml")),
         benchmarks: parse("benchmarks", data!("benchmarks.toml")),
+        combat: aoe2_battle::CombatRules::parse(
+            data!("combat_upgrades.toml"),
+            data!("combat_civ_bonuses.toml"),
+            data!("armor_classes.toml"),
+        )
+        .expect("reglas de combate"),
         upgrade_groups: parse::<UpgradeFile>("upgrade_groups", data!("upgrade_groups.toml")).group,
         civs: aoe2_data::civs::parse_civs(data!("civs.json")).expect("civs.json embebido"),
         civ_bonuses: aoe2_data::civs::parse_bonuses(data!("civ_bonuses.toml")).expect("civ_bonuses.toml embebido"),

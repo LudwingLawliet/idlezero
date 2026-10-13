@@ -11,6 +11,7 @@ import GoalBuilder, { emptyGoal } from "./GoalBuilder";
 import Shortcuts from "./Shortcuts";
 import CivPicker from "./CivPicker";
 import Dashboard from "./Dashboard";
+import Battle from "./Battle";
 import { goalProgress } from "./goalProgress";
 import "./App.css";
 
@@ -41,7 +42,7 @@ export default function App() {
   const [view, setView] = useState<OptimizeView | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"map" | "dash" | "list" | "calc">("map");
+  const [tab, setTab] = useState<"map" | "dash" | "list" | "calc" | "battle">("map");
   const [selected, setSelected] = useState<Selection>(null);
   const [cursor, setCursor] = useState<number | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -110,7 +111,7 @@ export default function App() {
         return;
       }
       if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
-      const tabs: Record<string, "map" | "dash" | "list" | "calc"> = { "1": "map", "2": "dash", "3": "list", "4": "calc" };
+      const tabs: Record<string, "map" | "dash" | "list" | "calc" | "battle"> = { "1": "map", "2": "dash", "3": "list", "4": "calc", "5": "battle" };
       if (tabs[e.key]) setTab(tabs[e.key]);
       else if (e.key === "?") setHelp((h) => !h);
       else if (e.key === "c" || e.key === "C") setCivOpen(true);
@@ -228,6 +229,9 @@ export default function App() {
             <button className={tab === "calc" ? "active" : ""} onClick={() => setTab("calc")}>
               {L.tabCalc}
             </button>
+            <button className={`tab-battle${tab === "battle" ? " active" : ""}`} onClick={() => setTab("battle")}>
+              ⚔ {L.tabBattle}
+            </button>
             {tab === "map" && <MapLegend labels={labels} />}
             <button className="help-btn" title={`${L.shortcuts} · ${L.zoomHint}`} onClick={() => setHelp(true)}>
               ?
@@ -264,9 +268,10 @@ export default function App() {
               />
             )}
             {tab === "calc" && mapInfo && <Calculator map={mapInfo} labels={labels} civ={civ} />}
+            {tab === "battle" && <Battle info={info} labels={labels} civs={civs} lang={lang} map={map} />}
           </div>
         </section>
-        {view && plan && timeline && layout && tab !== "calc" && tab !== "dash" && (
+        {view && plan && timeline && layout && tab !== "calc" && tab !== "dash" && tab !== "battle" && (
           <SidePanel
             result={view.result}
             timeline={timeline}

@@ -23,4 +23,5 @@ serde_json.workspace = true
 aoe2-data.workspace = true
 aoe2-sim = { path = "../../crates/aoe2-sim" }
 aoe2-opt = { path = "../../crates/aoe2-opt" }
+aoe2-battle = { path = "../../crates/aoe2-battle" }
 toml.workspace = true
