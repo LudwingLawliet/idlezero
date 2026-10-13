@@ -11,7 +11,7 @@ pub mod goal;
 pub mod search;
 
 pub use goal::Goal;
-pub use search::{Choice, OptConfig, OptResult, Optimizer, Plan, TreeNode};
+pub use search::{Choice, OptConfig, OptResult, Optimizer, Plan, TreeNode, cancelled, request_cancel, reset_cancel, worker_threads};
 
 use aoe2_sim::Scenario;
 
@@ -21,6 +21,9 @@ use aoe2_sim::Scenario;
 /// Con civilización, primero se optimiza el escenario neutro: su mejor plan
 /// entra como candidato (una civilización con bonos a favor no puede salir
 /// peor por azar de la búsqueda) y su tiempo se informa en `neutral_time`.
+/// Error que devuelve `optimize` si se pidió cancelar.
+pub const CANCELLED: &str = "cancelled";
+
 pub fn optimize(base: &Scenario, goal: &Goal, cfg: OptConfig) -> Result<OptResult, String> {
     let mut seeds = Vec::new();
     let mut neutral_time = None;
@@ -42,6 +45,9 @@ pub fn optimize(base: &Scenario, goal: &Goal, cfg: OptConfig) -> Result<OptResul
     } else {
         Optimizer::new(base, goal, cfg)?.relax().with_seeds(seeds).run()
     };
+    if cancelled() {
+        return Err(CANCELLED.into());
+    }
     result.neutral_time = neutral_time;
     Ok(result)
 }

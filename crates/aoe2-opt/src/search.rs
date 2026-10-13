@@ -13,6 +13,28 @@ use std::collections::BTreeSet;
 /// objetivo pero frenan todo si faltan).
 const WOOD_RESERVE: f64 = 120.0;
 
+/// Hilos para el haz: todos los núcleos menos uno, para que la interfaz y el
+/// sistema sigan respondiendo en equipos modestos.
+pub fn worker_threads() -> usize {
+    std::thread::available_parallelism().map_or(1, |n| n.get()).saturating_sub(1).max(1)
+}
+
+static CANCEL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Pide cancelar los cálculos en curso (los que lo comprueban terminan pronto).
+pub fn request_cancel() {
+    CANCEL.store(true, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// Quita una cancelación pendiente (al empezar un cálculo nuevo).
+pub fn reset_cancel() {
+    CANCEL.store(false, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub fn cancelled() -> bool {
+    CANCEL.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 #[derive(Debug, Clone)]
 pub struct OptConfig {
     pub beam_width: usize,
@@ -829,7 +851,7 @@ impl<'a> Optimizer<'a> {
         // Objetivos largos (muchas decisiones): haz más estrecho para acotar el tiempo.
         let levels = bound.map_or(30, |b| (b / 25).max(1) as usize);
         let width = beam_width.min((beam_width * 30 / levels).max(16));
-        while !beam.is_empty() {
+        while !beam.is_empty() && !cancelled() {
             // Expandir todos los hijos en paralelo; los resultados se juntan en
             // el mismo orden que las tareas, así que el resultado es determinista.
             let tasks: Vec<(usize, Choice)> = beam
@@ -839,7 +861,7 @@ impl<'a> Optimizer<'a> {
                 .flat_map(|(i, n)| self.options(&n.sim).into_iter().map(move |c| (i, c)))
                 .collect();
             sims += tasks.len();
-            let threads = std::thread::available_parallelism().map_or(1, |n| n.get()).min(tasks.len().max(1));
+            let threads = worker_threads().min(tasks.len().max(1));
             let chunk = tasks.len().div_ceil(threads).max(1);
             let beam_ref = &beam;
             let done_ref = &done;
@@ -929,6 +951,9 @@ impl<'a> Optimizer<'a> {
         let mut budget = self.cfg.refine_budget;
         let mut run = self.simulate_choices(&best.choices, None, true);
         'outer: loop {
+            if cancelled() {
+                break;
+            }
             let n = best.choices.len();
             // (primera decisión que cambia, nueva secuencia)
             let mut candidates: Vec<(usize, Vec<Choice>)> = Vec::new();
@@ -1108,7 +1133,7 @@ impl<'a> Optimizer<'a> {
         const CHEAP: usize = 200_000;
         let mut i = 0;
         let mut extra = false;
-        while i < passes.len() {
+        while i < passes.len() && !cancelled() {
             let (h, w) = passes[i];
             i += 1;
             let bound = finished.iter().filter_map(|p| p.time).min().or(self.hint_bound);
@@ -1151,6 +1176,9 @@ impl<'a> Optimizer<'a> {
                 cpasses.push((Heuristic::Macro, self.cfg.beam_width * 4));
             }
             for (h, w) in cpasses {
+                if cancelled() {
+                    break;
+                }
                 let (mut plans, sims) = classic.beam(h, cbest, w);
                 cbest = plans.iter().filter_map(|p| p.time).chain(cbest).min();
                 // Solo los mejores: re-simular todos costaría más que el haz.

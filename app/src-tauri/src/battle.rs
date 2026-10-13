@@ -139,6 +139,7 @@ fn army_at(sc: &Scenario, tl: &Timeline, civ: &Option<String>, t: u32) -> Army {
 /// cada una tiene en ese momento.
 #[tauri::command]
 pub async fn strategy_duel(map: String, a: DuelSide, b: DuelSide, lang: String) -> Result<DuelView, String> {
+    aoe2_opt::reset_cancel();
     crate::blocking(move || {
         let sides = [a, b];
         // Las dos optimizaciones a la vez (cada una ya reparte su trabajo).

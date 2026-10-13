@@ -70,6 +70,18 @@ jobs:
           releaseDraft: true
           prerelease: false
 
+      - name: Autoprueba del binario (Linux)
+        if: runner.os == 'Linux'
+        run: ./target/release/idlezero --selftest
+
+      - name: Autoprueba del binario (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        # Es una app de ventana: Start-Process -Wait espera y da el código de salida.
+        run: |
+          $p = Start-Process -FilePath target\release\idlezero.exe -ArgumentList '--selftest' -Wait -PassThru -NoNewWindow
+          if ($p.ExitCode -ne 0) { Write-Error "selftest falló: $($p.ExitCode)"; exit 1 }
+
       - name: Publicar hashes SHA-256
         if: startsWith(github.ref, 'refs/tags/')
         shell: bash

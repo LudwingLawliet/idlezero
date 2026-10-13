@@ -73,7 +73,7 @@ export default function App() {
           setPlanView(null);
           setSelected(null);
         },
-        (e) => setError(String(e)),
+        (e) => setError(String(e) === "cancelled" ? "cancelled" : String(e)),
       )
       .finally(() => setBusy(false));
   }, [map, goal, lang, civ]);
@@ -202,9 +202,16 @@ export default function App() {
               ))}
             </select>
           </label>
-          <button className="primary" onClick={run} disabled={busy}>
-            {busy ? L.calculating : L.calculate}
-          </button>
+          {busy ? (
+            <button className="primary busy-btn" onClick={() => invoke("cancel_optimize")} title={L.cancelCalc}>
+              <span className="spinner" aria-hidden="true" />
+              {L.calculating} · {L.cancel}
+            </button>
+          ) : (
+            <button className="primary" onClick={run}>
+              {L.calculate}
+            </button>
+          )}
         </div>
         <div className="goal-row">
           <span className="goal-title">{L.goal}</span>
@@ -212,7 +219,7 @@ export default function App() {
         </div>
       </header>
 
-      {error && <div className="error">{error}</div>}
+      {error === "cancelled" ? <div className="notice">{L.cancelledCalc}</div> : error && <div className="error">{error}</div>}
 
       <main>
         <section className="canvas">

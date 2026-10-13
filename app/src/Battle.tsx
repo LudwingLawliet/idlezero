@@ -201,7 +201,7 @@ export default function Battle({ info, labels, civs, lang, map }: { info: AppInf
       b: { goal: goal(duelPlans[1]), civ: sides[1].civ || null },
       lang,
     })
-      .then(setDuel, (e) => setError(String(e)))
+      .then(setDuel, (e) => setError(String(e) === "cancelled" ? null : String(e)))
       .finally(() => setDuelBusy(false));
   };
 
@@ -361,9 +361,16 @@ export default function Battle({ info, labels, civs, lang, map }: { info: AppInf
               </select>
             </label>
           ))}
-          <button className="primary" onClick={runDuel} disabled={duelBusy}>
-            {duelBusy ? L.duelRunning : L.duelRun}
-          </button>
+          {duelBusy ? (
+            <button className="primary busy-btn" onClick={() => invoke("cancel_optimize")} title={L.cancelCalc}>
+              <span className="spinner" aria-hidden="true" />
+              {L.duelRunning} · {L.cancel}
+            </button>
+          ) : (
+            <button className="primary" onClick={runDuel}>
+              {L.duelRun}
+            </button>
+          )}
         </div>
         {duel && (
           <>

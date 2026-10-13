@@ -263,6 +263,7 @@ pub(crate) async fn blocking<T: Send + 'static>(f: impl FnOnce() -> Result<T, St
 
 #[tauri::command]
 async fn optimize(map: String, goal: Goal, lang: String, civ: Option<String>) -> Result<OptimizeView, String> {
+    aoe2_opt::reset_cancel();
     blocking(move || {
         let sc = bundle::scenario(&map, civ.as_deref())?;
         let started = std::time::Instant::now();
@@ -272,6 +273,12 @@ async fn optimize(map: String, goal: Goal, lang: String, civ: Option<String>) ->
         Ok(OptimizeView { result, events, millis })
     })
     .await
+}
+
+/// Cancela los cálculos en curso (optimizar, duelo de estrategias).
+#[tauri::command]
+fn cancel_optimize() {
+    aoe2_opt::request_cancel();
 }
 
 #[derive(Serialize)]
@@ -566,6 +573,52 @@ fn civs(lang: String) -> Vec<CivView> {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// Autoprueba sin ventana (`idlezero --selftest`): carga los datos
+/// incrustados, optimiza "Feudal lo antes posible", calcula una batalla y
+/// devuelve el código de salida. La usa la CI en Windows y Linux.
+pub fn selftest() -> i32 {
+    let check = || -> Result<String, String> {
+        let info = app_info("es".into());
+        if info.catalog.units.is_empty() || info.presets.is_empty() {
+            return Err("catálogo vacío".into());
+        }
+        let civs = civs("en".into());
+        if civs.len() < 50 {
+            return Err(format!("solo {} civilizaciones", civs.len()));
+        }
+        let goal = info.presets.iter().find(|p| p.id == "feudal").ok_or("falta la plantilla feudal")?.goal.clone();
+        let sc = bundle::scenario("arabia_neutra", None)?;
+        let started = std::time::Instant::now();
+        let r = aoe2_opt::optimize(&sc, &goal, OptConfig::default())?;
+        let t = r.best.time.ok_or("Feudal no se cumple")?;
+        let b = bundle();
+        let army = |unit: u32| aoe2_battle::Army { civ: None, age: Age::Castle, techs: vec![], squads: vec![aoe2_battle::Squad { unit, count: 5 }] };
+        let fight = aoe2_battle::fight(&b.data, &b.combat, &army(38), &army(4))?;
+        if fight.winner != Some(aoe2_battle::Side::A) {
+            return Err("batalla: los caballeros deberían ganar".into());
+        }
+        Ok(format!(
+            "IdleZero {} · datos {} · {} civilizaciones · Feudal {} en {} ms · hilos {}",
+            env!("CARGO_PKG_VERSION"),
+            info.source_commit.get(..7).unwrap_or(""),
+            civs.len(),
+            aoe2_sim::clock(t),
+            started.elapsed().as_millis(),
+            aoe2_opt::worker_threads()
+        ))
+    };
+    match check() {
+        Ok(msg) => {
+            println!("selftest ok: {msg}");
+            0
+        }
+        Err(e) => {
+            eprintln!("selftest FALLÓ: {e}");
+            1
+        }
+    }
+}
+
 pub fn run() {
     // WebKitGTK con GPU NVIDIA en Wayland falla al iniciar ("Error 71 (Protocol
     // error) dispatching to Wayland display"). Desactivar el renderer DMABUF lo
@@ -578,13 +631,18 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![app_info, civs, unit_card, battle::battle, battle::strategy_duel, optimize, simulate_plan, builders_what_if, calculate])
+        .invoke_handler(tauri::generate_handler![app_info, civs, unit_card, battle::battle, battle::strategy_duel, cancel_optimize, optimize, simulate_plan, builders_what_if, calculate])
         .run(tauri::generate_context!())
         .expect("error al iniciar la aplicación Tauri");
 }
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn selftest_passes() {
+        assert_eq!(super::selftest(), 0);
+    }
+
     #[test]
     fn embedded_data_loads_and_builds_catalog() {
         let info = super::app_info("es".into());
