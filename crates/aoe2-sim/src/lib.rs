@@ -18,7 +18,7 @@ pub mod timeline;
 pub use orders::BuildOrder;
 pub use scenario::Scenario;
 pub use step::{Sim, Stop};
-pub use timeline::{Event, IdleCause, Snapshot, Summary, Timeline, clock};
+pub use timeline::{Event, IdleCause, Series, Snapshot, Summary, Task, Timeline, VillagerInfo, clock};
 
 /// Simula el escenario hasta `stop`.
 pub fn simulate(scenario: &Scenario, stop: Stop) -> Result<Timeline, String> {

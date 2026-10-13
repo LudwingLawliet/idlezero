@@ -103,6 +103,14 @@ impl Activity {
 #[derive(Debug, Clone)]
 pub struct Villager {
     pub id: u32,
+    /// Segundo en que nació (0 para los iniciales).
+    pub born: u32,
+    /// CU del que nació (índice en `GameState::tcs`); `None` = aldeano inicial.
+    pub born_tc: Option<usize>,
+    /// Lo que depositó de cada recurso (comida, madera, oro, piedra).
+    pub gathered: [f64; 4],
+    /// Última tarea publicada en la línea de tiempo.
+    pub task: Option<crate::timeline::Task>,
     /// Pool al que vuelve cuando no tiene otra cosa que hacer.
     pub pool: usize,
     pub activity: Activity,
@@ -123,6 +131,16 @@ pub struct Site {
     pub farm_for: Option<u32>,
     /// Pool cuyo punto de entrega acorta este edificio.
     pub at: Option<usize>,
+    /// Nº de edificio colocado (para las hipótesis de constructores).
+    pub placement: usize,
+}
+
+/// Un centro urbano y lo que está haciendo.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TownCenter {
+    /// Sitio de construcción del que salió (`None` = CU inicial).
+    pub site: Option<usize>,
+    pub job: Option<Running>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -166,8 +184,8 @@ pub struct GameState {
     pub built: Vec<(u32, u32)>,
     pub techs: Vec<u32>,
     pub effects: Effects,
-    /// Lo que hace el CU (uno solo en esta fase).
-    pub tc: Option<Running>,
+    /// Centros urbanos terminados, cada uno con su cola.
+    pub tcs: Vec<TownCenter>,
     /// Investigaciones en otros edificios.
     pub research: Vec<Running>,
     /// Investigaciones pedidas por la orden que aún no empiezan.
@@ -191,6 +209,24 @@ impl GameState {
     /// Edificios de este tipo terminados o en obra.
     pub fn count_planned(&self, building: u32) -> usize {
         self.count_built(building) + self.sites.iter().filter(|s| s.building == building && !s.done).count()
+    }
+
+    /// ¿Algún CU investiga `tech` ahora?
+    pub fn tc_researching(&self, tech: u32) -> bool {
+        self.tcs.iter().any(|t| t.job.is_some_and(|r| r.job == Job::Research(tech)))
+    }
+
+    /// Investigación de edad en curso en algún CU: (tecnología, segundos que faltan).
+    pub fn tc_age_research(&self) -> Option<(u32, u32)> {
+        self.tcs.iter().find_map(|t| match t.job {
+            Some(Running { job: Job::Research(tech), left, .. }) => Some((tech, left)),
+            _ => None,
+        })
+    }
+
+    /// Aldeanos en producción en todos los CU.
+    pub fn villagers_in_production(&self) -> u32 {
+        self.tcs.iter().filter(|t| t.job.is_some_and(|r| r.job == Job::Villager)).count() as u32
     }
 
     pub fn units_of(&self, unit: u32) -> u32 {

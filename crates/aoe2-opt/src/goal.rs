@@ -122,7 +122,7 @@ impl Goal {
                 continue;
             }
             let tech = sc.rules.age_tech(age).unwrap();
-            let started = s.tc.is_some_and(|r| r.job == aoe2_sim::state::Job::Research(tech));
+            let started = s.tc_researching(tech);
             if !started {
                 add(&sc.data.tech(tech).unwrap().cost, 1);
             }

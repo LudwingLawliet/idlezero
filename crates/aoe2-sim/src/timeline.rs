@@ -11,7 +11,50 @@ pub const TICK_SECONDS: u32 = 25;
 pub struct Timeline {
     pub events: Vec<TimedEvent>,
     pub ticks: Vec<Snapshot>,
+    /// Estado de cada segundo (para inspeccionar cualquier momento).
+    pub series: Series,
+    /// Cada aldeano: cuándo y de dónde nació y lo que juntó.
+    pub villagers: Vec<VillagerInfo>,
     pub summary: Summary,
+}
+
+/// Qué hace un aldeano (cada cambio es un evento `TaskChanged`).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum Task {
+    /// Recolectar en un pool (incluye ir y volver del punto de entrega).
+    Gather { pool: String },
+    /// Atraer un jabalí al CU.
+    Lure { pool: String },
+    /// Construir (incluye caminar hasta la obra). `placement` = nº de edificio colocado.
+    Build { building: String, placement: usize },
+    /// Esperando recursos para colocar un edificio.
+    Wait { building: String },
+    Idle,
+}
+
+/// Estado segundo a segundo, en columnas (compacto para la interfaz).
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+pub struct Series {
+    pub food: Vec<f32>,
+    pub wood: Vec<f32>,
+    pub gold: Vec<f32>,
+    pub stone: Vec<f32>,
+    pub pop: Vec<u16>,
+    pub pop_cap: Vec<u16>,
+    /// CU trabajando en ese segundo (de cuántos hay).
+    pub tc_busy: Vec<u8>,
+    pub tcs: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct VillagerInfo {
+    pub id: u32,
+    pub born: u32,
+    /// Nº de CU del que nació (0 = el inicial); `None` = aldeano inicial.
+    pub born_tc: Option<usize>,
+    /// Comida, madera, oro y piedra depositadas.
+    pub gathered: [f64; 4],
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -24,7 +67,7 @@ pub struct TimedEvent {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Event {
     VillagerCreated { villager: u32, assignment: String },
-    BuildStarted { building: String, builders: Vec<u32> },
+    BuildStarted { building: String, builders: Vec<u32>, placement: usize },
     BuildFinished { building: String },
     ResearchStarted { tech: String },
     ResearchFinished { tech: String },
@@ -32,8 +75,11 @@ pub enum Event {
     Moved { villagers: Vec<u32>, from: String, to: String },
     PoolExhausted { pool: String },
     Lured { source: String, villager: u32 },
-    TcIdle { cause: IdleCause, seconds: u32 },
+    TcIdle { cause: IdleCause, seconds: u32, tc: usize },
     UnitTrained { unit: String, count: u32 },
+    TaskChanged { villager: u32, task: Task },
+    /// Pago de algo: qué, cuánto y cómo quedaron las reservas.
+    Spent { what: String, cost: aoe2_data::Cost, stock: [f64; 4] },
     /// Momento en que el optimizador (u otra fuente externa) tomó una decisión.
     Decision { villager: u32, choice: String },
     StepBlocked { step: usize, reason: String },
@@ -80,6 +126,8 @@ pub struct Summary {
     /// Suma de segundos de aldeanos sin nada que hacer.
     pub villager_idle_seconds: u32,
     pub gathered: Gathered,
+    /// Todo lo pagado (aldeanos, edificios, investigaciones, unidades).
+    pub spent: Gathered,
     /// (edificio, segundo en que se terminó).
     pub buildings: Vec<(String, u32)>,
 }

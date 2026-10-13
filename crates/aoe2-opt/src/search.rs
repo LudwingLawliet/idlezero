@@ -4,7 +4,7 @@
 use crate::goal::Goal;
 use aoe2_data::Age;
 use aoe2_sim::orders::{Auto, BuildOrder, Condition, Production, StartAssign, Step, VillagerAssign, Assign};
-use aoe2_sim::state::{GameState, Job};
+use aoe2_sim::state::GameState;
 use aoe2_sim::{Scenario, Sim, Snapshot, Timeline};
 use serde::Serialize;
 use std::collections::BTreeSet;
@@ -285,7 +285,7 @@ impl<'a> Optimizer<'a> {
         // Clic de edad: si el objetivo pide una edad mayor y no está pedida.
         let click = next_age(s.age).filter(|a| *a <= self.target).and_then(|a| {
             let tech = self.sc.rules.age_tech(a)?;
-            let pending = s.pending_research.contains(&tech) || s.tc.is_some_and(|r| r.job == Job::Research(tech));
+            let pending = s.pending_research.contains(&tech) || s.tc_researching(tech);
             (!pending).then(|| self.sc.rules.tech_name(tech).unwrap().to_owned())
         });
         // Dejar de crear aldeanos: objetivos de unidades/edificios, ya en la edad.
@@ -339,9 +339,8 @@ impl<'a> Optimizer<'a> {
         let vcost = v.cost.food as f64;
         let mut villagers = s.villagers.len() as u32;
         let max_v = sim.max_villagers().or(self.goal.villagers.filter(|_| self.goal.units.is_empty()).map(|n| n.max(villagers)));
-        let researching_age = matches!(s.tc, Some(r) if matches!(r.job, Job::Research(t) if self.sc.rules.age_of_tech(t).is_some()));
-        let mut tc_free_in = match s.tc {
-            Some(r) if researching_age => r.left as f64,
+        let mut tc_free_in = match s.tc_age_research() {
+            Some((tech, left)) if self.sc.rules.age_of_tech(tech).is_some() => left as f64,
             _ => 0.0,
         };
         // Sin clic pedido, el CU hará al menos un aldeano más antes de poder
@@ -393,7 +392,7 @@ impl<'a> Optimizer<'a> {
         let mut age = s.age;
         while let Some(a) = next_age(age).filter(|a| *a <= self.target) {
             let tech = self.sc.rules.age_tech(a).unwrap();
-            let started = s.tc.is_some_and(|r| r.job == Job::Research(tech));
+            let started = s.tc_researching(tech);
             if !started {
                 ages_after += self.sc.data.tech(tech).unwrap().research_time as f64;
             }
@@ -419,7 +418,7 @@ impl<'a> Optimizer<'a> {
         let s = &sim.state;
         let need = self.goal.remaining_cost(&self.sc, s);
         let mut inc = sim.income();
-        if s.tc.is_some_and(|r| r.job == Job::Villager) && sim.max_villagers().is_none() {
+        if s.villagers_in_production() > 0 && sim.max_villagers().is_none() {
             let v = self.sc.data.unit(aoe2_data::ids::VILLAGER).unwrap();
             inc.food -= v.cost.food as f64 / v.train_time as f64;
         }
@@ -440,8 +439,8 @@ impl<'a> Optimizer<'a> {
         let mut age = s.age;
         while let Some(a) = next_age(age).filter(|a| *a <= self.target) {
             let tech = self.sc.rules.age_tech(a).unwrap();
-            match s.tc {
-                Some(r) if r.job == Job::Research(tech) => tc_left = r.left as f64,
+            match s.tc_age_research() {
+                Some((t, left)) if t == tech => tc_left = left as f64,
                 _ => ages_after += self.sc.data.tech(tech).unwrap().research_time as f64,
             }
             age = a;
@@ -590,7 +589,7 @@ impl<'a> Optimizer<'a> {
                 Age::Castle => 1,
                 _ => 2,
             };
-            let pending = s.pending_research.contains(&tech) || s.tc.is_some_and(|r| r.job == Job::Research(tech));
+            let pending = s.pending_research.contains(&tech) || s.tc_researching(tech);
             (!pending && villagers >= p.click_at[i]).then(|| self.sc.rules.tech_name(tech).unwrap().to_owned())
         });
         let stop = p.stop_at.is_some_and(|n| villagers >= n) && sim.max_villagers().is_none() && s.age >= self.target;

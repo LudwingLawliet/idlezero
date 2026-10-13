@@ -48,7 +48,7 @@ pub fn describe(sc: &Scenario, l: &Locale, e: &Event) -> Option<String> {
                 None => l.fmt("events.villager_created", &[("n", &n), ("task", &l.pool(a))]),
             }
         }
-        Event::BuildStarted { building: b, builders } if b != "farm" => l.fmt(
+        Event::BuildStarted { building: b, builders, .. } if b != "farm" => l.fmt(
             "events.build_started",
             &[("building", &building(sc, l, b)), ("builders", &builders.len().to_string())],
         ),
@@ -67,7 +67,7 @@ pub fn describe(sc: &Scenario, l: &Locale, e: &Event) -> Option<String> {
             let pool = sc.map.sources.iter().find(|s| &s.id == source).map(|s| s.pool()).unwrap_or(source);
             l.fmt("events.lured", &[("n", &villager.to_string()), ("source", &l.pool(pool))])
         }
-        Event::TcIdle { cause, seconds } => l.fmt(
+        Event::TcIdle { cause, seconds, .. } => l.fmt(
             "events.tc_idle",
             &[("seconds", &seconds.to_string()), ("cause", &idle_cause(l, *cause))],
         ),
