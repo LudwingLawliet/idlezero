@@ -44,6 +44,16 @@ struct Entity {
     id: u32,
     name: String,
     age: Age,
+    /// Unidades: infantry, archers, cav_archers, cavalry, siege, monks, ships, other.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    category: Option<String>,
+    /// Orden dentro de la categoría: primera unidad de su línea.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    line: Option<u32>,
+    cost: aoe2_data::Cost,
+    /// Segundos de entrenamiento, investigación o construcción (1 aldeano).
+    time: u32,
+    hp: i32,
 }
 
 #[derive(Serialize)]
@@ -143,6 +153,11 @@ fn app_info(lang: String) -> AppInfo {
             id: u.id,
             name: u.names.get(&lang).to_owned(),
             age: u.tree.as_ref().unwrap().age,
+            category: Some(bundle::unit_category(u)),
+            line: Some(bundle::line_root(u.id)),
+            cost: u.cost,
+            time: u.train_time,
+            hp: u.hp,
         })
         .collect();
     let techs = b
@@ -155,6 +170,11 @@ fn app_info(lang: String) -> AppInfo {
             id: t.id,
             name: t.names.get(&lang).to_owned(),
             age: t.tree.as_ref().unwrap().age,
+            category: None,
+            line: None,
+            cost: t.cost,
+            time: t.research_time,
+            hp: 0,
         })
         .collect();
     let buildings = b
@@ -166,7 +186,17 @@ fn app_info(lang: String) -> AppInfo {
             let key = key_of(&b.rules.names.buildings, x.id);
             let sc = bundle::scenario(&b.maps[0].0, None).ok();
             let age = sc.map_or(x.tree.as_ref().unwrap().age, |sc| sc.building_age(x.id));
-            Entity { key, id: x.id, name: x.names.get(&lang).to_owned(), age }
+            Entity {
+                key,
+                id: x.id,
+                name: x.names.get(&lang).to_owned(),
+                age,
+                category: None,
+                line: None,
+                cost: x.cost,
+                time: x.build_time,
+                hp: x.hp,
+            }
         })
         .collect();
     AppInfo {
@@ -311,6 +341,169 @@ fn calculate(map: String, input: CalcInput, civ: Option<String>) -> Result<CalcR
 }
 
 #[derive(Serialize)]
+struct ClassBonus {
+    class: String,
+    amount: i32,
+}
+
+#[derive(Serialize)]
+struct UnitRef {
+    id: u32,
+    key: String,
+    name: String,
+    age: Age,
+    /// Bono contra la otra unidad (para "débil contra").
+    #[serde(skip_serializing_if = "Option::is_none")]
+    bonus: Option<i32>,
+}
+
+#[derive(Serialize)]
+struct TechRef {
+    id: u32,
+    key: String,
+    name: String,
+    age: Age,
+    recommended: bool,
+    cost: aoe2_data::Cost,
+}
+
+/// Carta de presentación de una unidad.
+#[derive(Serialize)]
+struct UnitCard {
+    id: u32,
+    name: String,
+    age: Age,
+    category: String,
+    produced_at: Option<String>,
+    cost: aoe2_data::Cost,
+    train_time: u32,
+    hp: i32,
+    speed: f64,
+    attack: i32,
+    melee_armor: i32,
+    pierce_armor: i32,
+    range: f64,
+    reload: f64,
+    /// Bonos de ataque contra clases ("fuerte contra").
+    strong_vs: Vec<ClassBonus>,
+    /// Unidades comunes con bono contra esta ("débil contra").
+    weak_vs: Vec<UnitRef>,
+    /// Línea de la unidad (Arquero → Ballestero → Arbalestero).
+    line: Vec<UnitRef>,
+    /// Mejoras de su tipo (herrería, galería…) disponibles.
+    upgrades: Vec<TechRef>,
+}
+
+#[tauri::command]
+fn unit_card(id: u32, lang: String, civ: Option<String>) -> Result<UnitCard, String> {
+    let b = bundle();
+    let u = b.data.unit(id).ok_or(format!("unidad desconocida: {id}"))?;
+    let civ = civ.as_deref().and_then(|c| aoe2_data::Civ::build(c, &b.civs, &b.civ_bonuses));
+    let has_unit = |x: u32| civ.as_ref().is_none_or(|c| c.has_unit(x));
+    let has_tech = |x: u32| civ.as_ref().is_none_or(|c| c.has_tech(x));
+    let class_name = |c: u32| b.classes.class.get(&c.to_string());
+    let key_unit = |x: u32| b.rules.names.units.iter().find(|(_, v)| **v == x).map_or(x.to_string(), |(k, _)| k.clone());
+    let key_tech = |x: u32| b.rules.names.techs.iter().find(|(_, v)| **v == x).map_or(x.to_string(), |(k, _)| k.clone());
+    let uref = |x: &aoe2_data::Unit, bonus: Option<i32>| UnitRef {
+        id: x.id,
+        key: key_unit(x.id),
+        name: x.names.get(&lang).to_owned(),
+        age: x.tree.as_ref().map_or(Age::Dark, |t| t.age),
+        bonus,
+    };
+    let common = |x: &aoe2_data::Unit| x.tree.as_ref().is_some_and(|t| t.civ_count >= MIN_CIVS && t.produced_at.is_some());
+
+    let strong_vs = u
+        .combat
+        .attacks
+        .iter()
+        .filter(|a| a.amount > 0 && class_name(a.class).is_some_and(|c| c.shown))
+        .map(|a| ClassBonus { class: class_name(a.class).map(|c| if lang == "es" { c.es.clone() } else { c.en.clone() }).unwrap(), amount: a.amount })
+        .collect();
+    let my_classes: Vec<u32> = u.combat.armours.iter().map(|a| a.class).filter(|c| class_name(*c).is_some_and(|n| n.shown)).collect();
+    let mut weak: Vec<UnitRef> = b
+        .data
+        .units
+        .values()
+        .filter(|x| common(x) && has_unit(x.id) && x.id != id && b.data.unit_previous.get(&x.id).is_none())
+        .filter_map(|x| {
+            let bonus: i32 = x.combat.attacks.iter().filter(|a| a.amount > 0 && my_classes.contains(&a.class)).map(|a| a.amount).sum();
+            (bonus >= 2).then(|| uref(x, Some(bonus)))
+        })
+        .collect();
+    weak.sort_by(|a, b| b.bonus.cmp(&a.bonus).then(a.id.cmp(&b.id)));
+    weak.truncate(6);
+
+    // Línea: hacia atrás hasta la raíz y hacia delante por las sucesoras.
+    let mut line = Vec::new();
+    let root = bundle::line_root(id);
+    let mut cur = Some(root);
+    while let Some(c) = cur {
+        if let Some(x) = b.data.unit(c) {
+            if has_unit(c) {
+                line.push(uref(x, None));
+            }
+        }
+        cur = b.data.unit_previous.iter().find(|(_, p)| **p == c).map(|(k, _)| *k);
+        if line.len() > 8 {
+            break;
+        }
+    }
+
+    let category = bundle::unit_category(u);
+    let mut upgrades: Vec<TechRef> = Vec::new();
+    // Mejoras de la propia línea (p. ej. "Ballestero (mejora)").
+    for x in &line {
+        if let Some(t) = b.data.unit_upgrades.get(&x.id) {
+            if let Some(tech) = b.data.tech(*t) {
+                upgrades.push(TechRef {
+                    id: *t,
+                    key: key_tech(*t),
+                    name: tech.names.get(&lang).to_owned(),
+                    age: tech.tree.as_ref().map_or(Age::Dark, |t| t.age),
+                    recommended: false,
+                    cost: tech.cost,
+                });
+            }
+        }
+    }
+    if let Some(g) = b.upgrade_groups.iter().find(|g| g.category == category) {
+        for t in &g.techs {
+            if let (Some(tech), true) = (b.data.tech(*t), has_tech(*t)) {
+                upgrades.push(TechRef {
+                    id: *t,
+                    key: key_tech(*t),
+                    name: tech.names.get(&lang).to_owned(),
+                    age: tech.tree.as_ref().map_or(Age::Dark, |t| t.age),
+                    recommended: g.recommended.contains(t),
+                    cost: tech.cost,
+                });
+            }
+        }
+    }
+    Ok(UnitCard {
+        id,
+        name: u.names.get(&lang).to_owned(),
+        age: u.tree.as_ref().map_or(Age::Dark, |t| t.age),
+        category,
+        produced_at: u.tree.as_ref().and_then(|t| t.produced_at).and_then(|p| b.data.building(p)).map(|x| x.names.get(&lang).to_owned()),
+        cost: u.cost,
+        train_time: u.train_time,
+        hp: u.hp,
+        speed: u.speed,
+        attack: u.combat.attack,
+        melee_armor: u.combat.melee_armor,
+        pierce_armor: u.combat.pierce_armor,
+        range: u.combat.range,
+        reload: u.combat.reload,
+        strong_vs,
+        weak_vs: weak,
+        line,
+        upgrades,
+    })
+}
+
+#[derive(Serialize)]
 struct CivView {
     id: String,
     name: String,
@@ -371,7 +564,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![app_info, civs, optimize, simulate_plan, builders_what_if, calculate])
+        .invoke_handler(tauri::generate_handler![app_info, civs, unit_card, optimize, simulate_plan, builders_what_if, calculate])
         .run(tauri::generate_context!())
         .expect("error al iniciar la aplicación Tauri");
 }
@@ -437,5 +630,22 @@ mod civs_tests {
         assert!(huns.description.contains("casas"));
         assert!(!huns.simulated.is_empty());
         assert!(list.iter().any(|c| c.simulated.is_empty()), "las demás solo con árbol");
+    }
+}
+
+#[cfg(test)]
+mod card_tests {
+    #[test]
+    fn spearman_card_shows_cavalry_counter_and_knight_is_weak_to_spears() {
+        let spear = super::unit_card(93, "es".into(), None).unwrap();
+        assert_eq!(spear.category, "infantry");
+        assert!(spear.strong_vs.iter().any(|c| c.class == "Unidades montadas"), "{:?}", spear.strong_vs.iter().map(|c| &c.class).collect::<Vec<_>>());
+        let knight = super::unit_card(38, "es".into(), None).unwrap();
+        assert_eq!(knight.category, "cavalry");
+        assert!(knight.weak_vs.iter().any(|u| u.id == 93), "el caballero es débil contra el lancero");
+        let archer = super::unit_card(4, "es".into(), None).unwrap();
+        assert_eq!(archer.line.iter().map(|u| u.id).collect::<Vec<_>>(), vec![4, 24, 492]);
+        assert!(archer.upgrades.iter().any(|t| t.id == 199 && t.recommended));
+        assert!(archer.weak_vs.iter().any(|u| u.id == 7), "el arquero es débil contra el hostigador");
     }
 }

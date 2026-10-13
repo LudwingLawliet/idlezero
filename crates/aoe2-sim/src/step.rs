@@ -1018,8 +1018,7 @@ impl<'a> Sim<'a> {
             let age_ok = self.sc.data.tech(tech).and_then(|t| t.tree.as_ref()).is_none_or(|t| t.age <= self.state.age);
             let prev_ok = self
                 .sc
-                .rules
-                .tech_prerequisite(tech)
+                .tech_prereq(tech)
                 .is_none_or(|p| self.state.has_tech(p) || self.state.pending_research.contains(&p) || self.state.research.iter().any(|r| r.job == Job::Research(p)));
             if age_ok && prev_ok {
                 let b = self.research_building(tech);
@@ -1163,7 +1162,7 @@ impl<'a> Sim<'a> {
         if t.tree.as_ref().is_some_and(|tr| tr.age > self.state.age) {
             return false;
         }
-        if self.sc.rules.tech_prerequisite(tech).is_some_and(|p| !self.state.has_tech(p)) {
+        if self.sc.tech_prereq(tech).is_some_and(|p| !self.state.has_tech(p)) {
             return false;
         }
         if let Some(req) = self.sc.rules.age_requirement(tech) {

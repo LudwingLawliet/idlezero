@@ -61,11 +61,17 @@ impl Scenario {
         self.rules.building_age_override(b).map_or(tree, |o| o.max(tree))
     }
 
+    /// Tecnología que exige `tech` antes: la del árbol de aoe2techtree o, si
+    /// no la trae, la de rules.toml.
+    pub fn tech_prereq(&self, tech: u32) -> Option<u32> {
+        self.data.tech_previous.get(&tech).copied().or_else(|| self.rules.tech_prerequisite(tech))
+    }
+
     /// Tecnologías previas que faltan para `tech`, de la más antigua a la más nueva.
     pub fn tech_chain(&self, tech: u32) -> Vec<u32> {
         let mut chain = vec![tech];
         let mut t = tech;
-        while let Some(prev) = self.rules.tech_prerequisite(t) {
+        while let Some(prev) = self.tech_prereq(t) {
             if chain.contains(&prev) {
                 break;
             }

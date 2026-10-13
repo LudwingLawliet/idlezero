@@ -23,7 +23,7 @@ pub use rates::GatherRates;
 pub use rules::Rules;
 
 /// Versión del esquema de `game_data.json`. Subirla al cambiar los tipos.
-pub const SCHEMA_VERSION: u32 = 2;
+pub const SCHEMA_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Age {
@@ -113,6 +113,34 @@ pub struct Unit {
     /// Casillas por segundo.
     pub speed: f64,
     pub tree: Option<TreeInfo>,
+    /// Datos de combate (simulador de batalla y carta de la unidad).
+    #[serde(default)]
+    pub combat: Combat,
+}
+
+/// Ataque o armadura contra una clase (ver data/armor_classes.toml).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClassAmount {
+    pub class: u32,
+    pub amount: i32,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Combat {
+    pub attack: i32,
+    pub melee_armor: i32,
+    pub pierce_armor: i32,
+    /// Casillas.
+    pub range: f64,
+    pub min_range: f64,
+    /// Segundos entre ataques.
+    pub reload: f64,
+    pub line_of_sight: f64,
+    pub accuracy: u32,
+    /// Ataque por clase (incluye los bonos contra clases concretas).
+    pub attacks: Vec<ClassAmount>,
+    /// Armadura por clase.
+    pub armours: Vec<ClassAmount>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -156,6 +184,12 @@ pub struct GameData {
     /// "Crossbow"): unidad -> tecnología de mejora (incluida en `techs`).
     #[serde(default)]
     pub unit_upgrades: BTreeMap<u32, u32>,
+    /// Línea de cada unidad: unidad -> la anterior (Ballestero -> Arquero).
+    #[serde(default)]
+    pub unit_previous: BTreeMap<u32, u32>,
+    /// Tecnología -> la que exige antes (Alto horno -> Fundición), según el árbol.
+    #[serde(default)]
+    pub tech_previous: BTreeMap<u32, u32>,
 }
 
 /// IDs de aoe2techtree que el motor necesita con nombre propio.

@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import UnitPicker, { PickResult } from "./UnitPicker";
 import { Labels, Kind } from "./labels";
 import { Age, AppInfo, CivView, Entity, Goal } from "./types";
 
@@ -8,38 +9,38 @@ const AGES: Age[] = ["Feudal", "Castle", "Imperial"];
 export const emptyGoal = (): Goal => ({ id: "custom", age: null, villagers: null, units: [], techs: [], buildings: [], allow_tc_idle: false });
 
 /** Objetivo como chips combinables: edad, aldeanos, unidades, tecnologías y edificios. */
-export default function GoalBuilder({ goal, onChange, info, labels, civ }: { goal: Goal; onChange: (g: Goal) => void; info: AppInfo; labels: Labels; civ?: CivView }) {
+export default function GoalBuilder({
+  goal,
+  onChange,
+  info,
+  labels,
+  civ,
+  lang,
+}: {
+  goal: Goal;
+  onChange: (g: Goal) => void;
+  info: AppInfo;
+  labels: Labels;
+  civ?: CivView;
+  lang: string;
+}) {
   const L = labels.ui;
   const [adding, setAdding] = useState<AddKind | null>(null);
-  const [query, setQuery] = useState("");
-  const [pick, setPick] = useState<Entity | null>(null);
   const [qty, setQty] = useState(10);
 
-  const options = useMemo(() => {
-    if (adding !== "unit" && adding !== "tech" && adding !== "building") return [];
-    const list = adding === "unit" ? info.catalog.units : adding === "tech" ? info.catalog.techs : info.catalog.buildings;
-    // Solo lo que tiene el árbol de la civilización elegida.
-    const allowed = civ ? (adding === "unit" ? civ.units : adding === "tech" ? civ.techs : civ.buildings) : null;
-    const q = query.trim().toLowerCase();
-    return list
-      .filter((e) => !allowed || allowed.includes(e.id) || (adding === "tech" && e.name.includes("(")))
-      .filter((e) => !q || e.name.toLowerCase().includes(q))
-      .slice(0, 40);
-  }, [adding, query, info, civ]);
-
   const set = (patch: Partial<Goal>) => onChange({ ...goal, id: "custom", ...patch });
-  const close = () => {
-    setAdding(null);
-    setQuery("");
-    setPick(null);
-  };
+  const close = () => setAdding(null);
   const confirm = (age?: Age) => {
     if (adding === "age" && age) set({ age });
     if (adding === "villagers") set({ villagers: Math.max(1, qty) });
-    if (pick && adding === "unit") set({ units: [...goal.units.filter((u) => u.unit !== pick.key), { unit: pick.key, count: Math.max(1, qty) }] });
-    if (pick && adding === "tech") set({ techs: [...goal.techs.filter((t) => t !== pick.key), pick.key] });
-    if (pick && adding === "building")
-      set({ buildings: [...goal.buildings.filter((b) => b.building !== pick.key), { building: pick.key, count: Math.max(1, qty) }] });
+    close();
+  };
+  // Lo elegido en la carta, más las mejoras marcadas como tecnologías.
+  const picked = (r: PickResult) => {
+    const techs = [...goal.techs.filter((t) => !r.techs.includes(t) && t !== r.key), ...r.techs];
+    if (adding === "unit") set({ units: [...goal.units.filter((u) => u.unit !== r.key), { unit: r.key, count: r.count }], techs });
+    if (adding === "tech") set({ techs: [...techs, r.key] });
+    if (adding === "building") set({ buildings: [...goal.buildings.filter((b) => b.building !== r.key), { building: r.key, count: r.count }] });
     close();
   };
 
@@ -66,7 +67,6 @@ export default function GoalBuilder({ goal, onChange, info, labels, civ }: { goa
       remove: () => set({ buildings: goal.buildings.filter((x) => x !== b) }),
     });
 
-  const needsQty = adding === "villagers" || adding === "unit" || adding === "building";
   const preset = info.presets.find((p) => p.id === goal.id);
   return (
     <div className="goal-builder">
@@ -100,15 +100,20 @@ export default function GoalBuilder({ goal, onChange, info, labels, civ }: { goa
             </button>
           </span>
         ))}
-        <span className="add">
-          <select value={adding ?? ""} onChange={(e) => setAdding((e.target.value || null) as AddKind | null)}>
-            <option value="">{L.add}</option>
-            <option value="age">{L.addAge}</option>
-            <option value="villagers">{L.addVillagers}</option>
-            <option value="unit">{L.addUnit}</option>
-            <option value="tech">{L.addTech}</option>
-            <option value="building">{L.addBuilding}</option>
-          </select>
+        <span className="add-buttons">
+          {(
+            [
+              ["unit", L.addUnit, "/img/unit/74.png"],
+              ["building", L.addBuilding, "/img/building/82.png"],
+              ["tech", L.addTech, "/img/tech/22.png"],
+              ["age", L.addAge, "/img/age/Castle.png"],
+              ["villagers", L.addVillagers, "/img/unit/83.png"],
+            ] as [AddKind, string, string][]
+          ).map(([k, text, icon]) => (
+            <button key={k} className={`add-btn${adding === k ? " active" : ""}`} onClick={() => setAdding(adding === k ? null : k)}>
+              <img src={icon} alt="" className="icon tiny" />+ {text}
+            </button>
+          ))}
         </span>
       </div>
       {preset && (
@@ -121,7 +126,7 @@ export default function GoalBuilder({ goal, onChange, info, labels, civ }: { goa
         {L.allowIdle}
       </label>
 
-      {adding && (
+      {(adding === "age" || adding === "villagers") && (
         <div className="popover">
           {adding === "age" &&
             AGES.map((a) => (
@@ -129,35 +134,32 @@ export default function GoalBuilder({ goal, onChange, info, labels, civ }: { goa
                 <img src={`/img/age/${a}.png`} alt="" className="icon small" /> {labels.t(`ages.${a}`)}
               </button>
             ))}
-          {(adding === "unit" || adding === "tech" || adding === "building") && (
-            <>
-              <input autoFocus placeholder={L.search} value={query} onChange={(e) => setQuery(e.target.value)} />
-              <div className="pick-list">
-                {options.map((e) => (
-                  <button key={e.key} className={`pick${pick?.key === e.key ? " active" : ""}`} onClick={() => setPick(e)}>
-                    <img src={`/img/${adding}/${e.id}.png`} alt="" className="icon small" />
-                    {e.name}
-                    <span className="muted tiny"> · {labels.t(`ages.${e.age}`)}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          {needsQty && (
+          {adding === "villagers" && (
             <label className="qty">
               {L.quantity}
-              <input type="number" min={1} max={200} value={qty} onChange={(e) => setQty(Number(e.target.value))} />
+              <input autoFocus type="number" min={1} max={200} value={qty} onChange={(e) => setQty(Number(e.target.value))} />
             </label>
           )}
           <div className="popover-actions">
             <button onClick={close}>{L.cancel}</button>
-            {adding !== "age" && (
-              <button className="primary" disabled={adding !== "villagers" && !pick} onClick={() => confirm()}>
+            {adding === "villagers" && (
+              <button className="primary" onClick={() => confirm()}>
                 {L.ok}
               </button>
             )}
           </div>
         </div>
+      )}
+      {(adding === "unit" || adding === "tech" || adding === "building") && (
+        <UnitPicker
+          kind={adding}
+          list={adding === "unit" ? info.catalog.units : adding === "tech" ? info.catalog.techs : info.catalog.buildings}
+          civ={civ}
+          lang={lang}
+          labels={labels}
+          onAdd={picked}
+          onClose={close}
+        />
       )}
     </div>
   );

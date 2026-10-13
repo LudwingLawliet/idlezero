@@ -37,7 +37,45 @@ struct TipsFile {
     tip: Vec<Tip>,
 }
 
+#[derive(serde::Deserialize, Clone)]
+pub struct ClassName {
+    pub en: String,
+    pub es: String,
+    #[serde(default = "yes")]
+    pub shown: bool,
+}
+
+fn yes() -> bool {
+    true
+}
+
+#[derive(serde::Deserialize, Clone)]
+pub struct Category {
+    pub id: String,
+    pub class: u32,
+}
+
+#[derive(serde::Deserialize)]
+pub struct ArmorClasses {
+    pub class: std::collections::BTreeMap<String, ClassName>,
+    pub category: Vec<Category>,
+}
+
+#[derive(serde::Deserialize, Clone)]
+pub struct UpgradeGroup {
+    pub category: String,
+    pub techs: Vec<u32>,
+    pub recommended: Vec<u32>,
+}
+
+#[derive(serde::Deserialize)]
+struct UpgradeFile {
+    group: Vec<UpgradeGroup>,
+}
+
 pub struct Bundle {
+    pub classes: ArmorClasses,
+    pub upgrade_groups: Vec<UpgradeGroup>,
     pub tips: Vec<Tip>,
     pub civs: Vec<aoe2_data::civs::CivInfo>,
     pub civ_bonuses: Vec<aoe2_data::civs::CivBonuses>,
@@ -57,6 +95,8 @@ pub fn bundle() -> &'static Bundle {
     static B: OnceLock<Bundle> = OnceLock::new();
     B.get_or_init(|| Bundle {
         tips: parse::<TipsFile>("tips", data!("tips.toml")).tip,
+        classes: parse("armor_classes", data!("armor_classes.toml")),
+        upgrade_groups: parse::<UpgradeFile>("upgrade_groups", data!("upgrade_groups.toml")).group,
         civs: aoe2_data::civs::parse_civs(data!("civs.json")).expect("civs.json embebido"),
         civ_bonuses: aoe2_data::civs::parse_bonuses(data!("civ_bonuses.toml")).expect("civ_bonuses.toml embebido"),
         data: serde_json::from_str(data!("game_data.json")).expect("game_data.json embebido"),
@@ -94,4 +134,27 @@ pub fn scenario(map: &str, civ: Option<&str>) -> Result<Scenario, String> {
             None => None,
         },
     })
+}
+
+/// Categoría de una unidad (infantry, archers, cavalry…) según sus clases de armadura.
+pub fn unit_category(unit: &aoe2_data::Unit) -> String {
+    let b = bundle();
+    for c in &b.classes.category {
+        if unit.combat.armours.iter().any(|a| a.class == c.class) {
+            return c.id.clone();
+        }
+    }
+    "other".into()
+}
+
+/// Primera unidad de la línea (Milicia para Campeón).
+pub fn line_root(id: u32) -> u32 {
+    let mut cur = id;
+    for _ in 0..10 {
+        match bundle().data.unit_previous.get(&cur) {
+            Some(p) => cur = *p,
+            None => break,
+        }
+    }
+    cur
 }

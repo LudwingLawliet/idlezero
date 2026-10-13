@@ -48,6 +48,45 @@ struct RawEntity {
     hp: Option<i32>,
     speed: Option<f64>,
     repeatable: Option<bool>,
+    attack: Option<i32>,
+    melee_armor: Option<i32>,
+    pierce_armor: Option<i32>,
+    range: Option<f64>,
+    min_range: Option<f64>,
+    reload_time: Option<f64>,
+    line_of_sight: Option<f64>,
+    accuracy_percent: Option<u32>,
+    #[serde(default)]
+    attacks: Vec<RawClassAmount>,
+    #[serde(default)]
+    armours: Vec<RawClassAmount>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct RawClassAmount {
+    amount: i32,
+    class: u32,
+}
+
+fn combat(e: &RawEntity) -> aoe2_data::Combat {
+    let list = |v: &[RawClassAmount]| -> Vec<aoe2_data::ClassAmount> {
+        let mut out: Vec<_> = v.iter().map(|c| aoe2_data::ClassAmount { class: c.class, amount: c.amount }).collect();
+        out.sort_by_key(|c| c.class);
+        out
+    };
+    aoe2_data::Combat {
+        attack: e.attack.unwrap_or(0),
+        melee_armor: e.melee_armor.unwrap_or(0),
+        pierce_armor: e.pierce_armor.unwrap_or(0),
+        range: e.range.unwrap_or(0.0),
+        min_range: e.min_range.unwrap_or(0.0),
+        reload: e.reload_time.unwrap_or(0.0),
+        line_of_sight: e.line_of_sight.unwrap_or(0.0),
+        accuracy: e.accuracy_percent.unwrap_or(100),
+        attacks: list(&e.attacks),
+        armours: list(&e.armours),
+    }
 }
 
 #[derive(Deserialize)]
@@ -85,6 +124,8 @@ struct NodeVotes {
     name_string_id: Option<u32>,
     picture_index: Option<u32>,
     civs: u32,
+    /// Unidad o tecnología anterior en su línea (Ballestero <- Arquero).
+    previous: BTreeMap<u32, u32>,
 }
 
 /// El valor más votado; en empate gana el menor, para que sea determinista.
@@ -172,6 +213,7 @@ fn import(vendor: &Path) -> Res<(GameData, HashMap<(Kind, u32), NodeVotes>)> {
                 train_time: e.train_time.ok_or(format!("unidad {} sin TrainTime", e.id))?,
                 hp: e.hp.unwrap_or(0),
                 speed: e.speed.unwrap_or(0.0),
+                combat: combat(e),
                 tree: tree(Kind::Unit, e.id)?,
             },
         );
@@ -258,6 +300,24 @@ fn import(vendor: &Path) -> Res<(GameData, HashMap<(Kind, u32), NodeVotes>)> {
         unit_upgrades.insert(*unit, e.id);
     }
 
+    // Líneas: unidad/tecnología anterior (moda entre civilizaciones).
+    let mut unit_previous = BTreeMap::new();
+    let mut tech_previous = BTreeMap::new();
+    let mut keys: Vec<&(Kind, u32)> = votes.keys().collect();
+    keys.sort();
+    for k in keys {
+        let Some(prev) = mode(&votes[k].previous) else { continue };
+        match k.0 {
+            Kind::Unit if units.contains_key(&k.1) && units.contains_key(&prev) => {
+                unit_previous.insert(k.1, prev);
+            }
+            Kind::Tech if techs.contains_key(&k.1) && techs.contains_key(&prev) => {
+                tech_previous.insert(k.1, prev);
+            }
+            _ => {}
+        }
+    }
+
     let data = GameData {
         schema_version: SCHEMA_VERSION,
         source: SourceInfo { repository: REPOSITORY.to_owned(), commit: git_commit(vendor) },
@@ -265,6 +325,8 @@ fn import(vendor: &Path) -> Res<(GameData, HashMap<(Kind, u32), NodeVotes>)> {
         buildings,
         techs,
         unit_upgrades,
+        unit_previous,
+        tech_previous,
     };
     Ok((data, votes))
 }
@@ -449,6 +511,18 @@ fn collect_tree_votes(dir: &Path) -> Res<HashMap<(Kind, u32), NodeVotes>> {
                 .filter(|_| kind == Kind::Building)
                 .filter(|_| node.link_node_type.as_deref() == Some("BuildingTech"));
             *v.requires.entry(requires).or_default() += 1;
+            let prev_type = match kind {
+                Kind::Unit => Some("Unit"),
+                Kind::Tech => Some("Research"),
+                Kind::Building => None,
+            };
+            if let (Some(link), Some(t)) = (node.link_id, prev_type) {
+                let lt = node.link_node_type.as_deref().unwrap_or("");
+                let same_kind = lt == t || (kind == Kind::Unit && lt == "UnitUpgrade");
+                if same_kind {
+                    *v.previous.entry(link).or_default() += 1;
+                }
+            }
             v.name_string_id.get_or_insert(node.name_string_id);
             v.picture_index.get_or_insert(node.picture_index);
         }

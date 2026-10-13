@@ -184,7 +184,7 @@ export default function App() {
         </div>
         <div className="goal-row">
           <span className="goal-title">{L.goal}</span>
-          <GoalBuilder goal={goal} onChange={setGoal} info={info} labels={labels} civ={civInfo} />
+          <GoalBuilder goal={goal} onChange={setGoal} info={info} labels={labels} civ={civInfo} lang={lang} />
         </div>
       </header>
 

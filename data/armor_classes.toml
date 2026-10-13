@@ -1,0 +1,68 @@
+# Clases de ataque/armadura de AoE2 DE (ids de aoe2techtree,
+# js/techtree.js -> attackAndArmorClasses), con nombre es/en.
+# `shown = false`: clases base que no son "bonos" (perforante y cuerpo a cuerpo
+# base, cuerpo a cuerpo que ignora armadura); no se muestran como counters.
+schema_version = 1
+
+[class]
+0 = { en = "Wonders", es = "Maravillas" }
+1 = { en = "Infantry", es = "Infantería" }
+2 = { en = "Heavy warships", es = "Barcos de guerra pesados" }
+3 = { en = "Base pierce", es = "Perforante base", shown = false }
+4 = { en = "Base melee", es = "Cuerpo a cuerpo base", shown = false }
+5 = { en = "Elephants", es = "Elefantes" }
+8 = { en = "Mounted units", es = "Unidades montadas" }
+11 = { en = "All buildings", es = "Todos los edificios" }
+13 = { en = "Stone defense & harbors", es = "Defensas de piedra y puertos" }
+14 = { en = "Predator animals", es = "Depredadores" }
+15 = { en = "Archers", es = "Arqueros" }
+16 = { en = "Ships", es = "Barcos" }
+17 = { en = "Rams", es = "Arietes" }
+18 = { en = "Trees", es = "Árboles" }
+19 = { en = "Unique units", es = "Unidades únicas" }
+20 = { en = "Siege", es = "Asedio" }
+21 = { en = "Standard buildings", es = "Edificios" }
+22 = { en = "Walls & gates", es = "Murallas y puertas" }
+23 = { en = "Gunpowder", es = "Pólvora" }
+24 = { en = "Boar", es = "Jabalíes" }
+25 = { en = "Monks", es = "Monjes" }
+26 = { en = "Castles", es = "Castillos" }
+27 = { en = "Spearmen", es = "Lanceros" }
+28 = { en = "Mounted archers", es = "Arqueros a caballo" }
+29 = { en = "Shock infantry", es = "Infantería de choque" }
+30 = { en = "Camels", es = "Camellos" }
+31 = { en = "Unblockable melee", es = "Cuerpo a cuerpo sin armadura", shown = false }
+32 = { en = "Condottieri", es = "Condotieros" }
+34 = { en = "Fishing ships", es = "Pesqueros" }
+35 = { en = "Mamelukes", es = "Mamelucos" }
+36 = { en = "Heroes & kings", es = "Héroes y reyes" }
+37 = { en = "Heavy siege", es = "Asedio pesado" }
+38 = { en = "Skirmishers", es = "Hostigadores" }
+39 = { en = "Cavalry resistance", es = "Resistencia a caballería" }
+40 = { en = "Houses", es = "Casas" }
+41 = { en = "Fire ships", es = "Barcos incendiarios" }
+60 = { en = "Long-range warships", es = "Barcos de largo alcance" }
+
+# Categoría de una unidad según sus clases de armadura (la primera que tenga,
+# en este orden).
+[[category]]
+id = "siege"
+class = 20
+[[category]]
+id = "ships"
+class = 16
+[[category]]
+id = "monks"
+class = 25
+[[category]]
+id = "cav_archers"
+class = 28
+[[category]]
+id = "cavalry"
+class = 8
+[[category]]
+id = "archers"
+class = 15
+[[category]]
+id = "infantry"
+class = 1

@@ -1,0 +1,26 @@
+# Mejoras que afectan a cada categoría de unidad (para la carta de la unidad y
+# las sugerencias del objetivo). Fuente: árbol tecnológico de AoE2 DE
+# (herrería, galería de tiro, establo, cuartel, castillo). Las mejoras de la
+# propia línea (Ballestero, Arbalestero…) salen de game_data.unit_previous.
+# `recommended`: las de herrería de la primera fila, las más habituales.
+schema_version = 1
+
+[[group]]
+category = "archers"
+techs = [199, 200, 201, 211, 212, 219, 437]
+recommended = [199, 211]
+
+[[group]]
+category = "cav_archers"
+techs = [199, 200, 201, 211, 212, 219, 437, 436, 435, 39]
+recommended = [199, 211, 435]
+
+[[group]]
+category = "infantry"
+techs = [67, 68, 75, 74, 76, 77, 215, 602, 875]
+recommended = [67, 74]
+
+[[group]]
+category = "cavalry"
+techs = [67, 68, 75, 81, 82, 80, 435, 39]
+recommended = [67, 81, 435]

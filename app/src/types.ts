@@ -22,11 +22,55 @@ export interface MapInfo extends Named {
   pools: PoolInfo[];
 }
 
+export interface Cost {
+  food: number;
+  wood: number;
+  gold: number;
+  stone: number;
+}
+
 export interface Entity {
   key: string;
   id: number;
   name: string;
   age: Age;
+  /** Solo unidades: infantry, archers, cav_archers, cavalry, siege, monks, ships, other. */
+  category?: string;
+  /** Solo unidades: primera unidad de su línea (para ordenar). */
+  line?: number;
+  cost: Cost;
+  /** Segundos de entrenamiento, investigación o construcción. */
+  time: number;
+  hp: number;
+}
+
+export interface UnitRef {
+  id: number;
+  key: string;
+  name: string;
+  age: Age;
+  bonus?: number;
+}
+
+export interface UnitCard {
+  id: number;
+  name: string;
+  age: Age;
+  category: string;
+  produced_at: string | null;
+  cost: Cost;
+  train_time: number;
+  hp: number;
+  speed: number;
+  attack: number;
+  melee_armor: number;
+  pierce_armor: number;
+  range: number;
+  reload: number;
+  strong_vs: { class: string; amount: number }[];
+  weak_vs: UnitRef[];
+  line: UnitRef[];
+  upgrades: { id: number; key: string; name: string; age: Age; recommended: boolean; cost: Cost }[];
 }
 
 export interface Goal {
