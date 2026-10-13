@@ -141,13 +141,12 @@ Arabia neutra, sin civilización, sin dejar el CU parado (valores aproximados):
 
 ## Tus capturas
 
-¿Quieres mostrar tu propia partida o tu orden? Guarda la imagen en `docs/img/` y enlázala en la sección que corresponda de este README (o en [la guía](docs/guia.md)) con `![Descripción](docs/img/tu-imagen.png)`. Para regenerar las capturas oficiales: `tools/screenshot.sh --release` (ver `CLAUDE.md`).
+¿Quieres mostrar tu propia partida o tu orden? Guarda la imagen en `docs/img/` y enlázala en la sección que corresponda de este README (o en [la guía](docs/guia.md)) con `![Descripción](docs/img/tu-imagen.png)`. Para regenerar las capturas oficiales: `tools/screenshot.sh --release` (Linux, necesita Xvfb, xdotool e ImageMagick).
 
 ## Más documentación
 
 - [Guía de uso paso a paso](docs/guia.md)
 - [Arquitectura del proyecto](docs/arquitectura.html) (diagrama interactivo con enlaces al código)
-- [Especificación original](docs/SPEC.md)
 
 ## Desarrollo
 

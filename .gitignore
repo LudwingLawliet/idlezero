@@ -4,3 +4,7 @@ node_modules/
 /vendor/
 .DS_Store
 .archify/
+
+# Notas de trabajo internas (no se publican)
+CLAUDE.md
+docs/SPEC.md
