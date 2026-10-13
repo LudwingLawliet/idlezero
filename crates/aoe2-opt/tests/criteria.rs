@@ -151,12 +151,13 @@ fn idle_by_reason(tl: &aoe2_sim::Timeline) -> std::collections::BTreeMap<aoe2_si
 }
 
 #[test]
-fn farmers_never_wait_idle_for_wood() {
+fn villagers_never_stand_idle_with_a_known_cause() {
     use aoe2_sim::timeline::IdleReason;
-    let r = optimize(&base(), &preset("castle"), OptConfig::default()).unwrap();
-    let idle = idle_by_reason(&r.timeline);
-    assert_eq!(idle.get(&IdleReason::NoWoodForFarm), None, "granjeros quietos: {idle:?}");
-    assert_eq!(idle.get(&IdleReason::Exhausted), None, "aldeanos sin pool: {idle:?}");
-    let total: u32 = idle.values().sum();
-    assert!(total < 120, "demasiado tiempo ocioso: {idle:?}");
+    for id in ["castle", "knights_10"] {
+        let r = optimize(&base(), &preset(id), OptConfig::default()).unwrap();
+        let idle = idle_by_reason(&r.timeline);
+        // Solo queda el segundo de espera de cada recién nacido ("other").
+        let avoidable: u32 = idle.iter().filter(|(k, _)| **k != IdleReason::Other).map(|(_, s)| s).sum();
+        assert_eq!(avoidable, 0, "{id}: aldeanos quietos {idle:?}");
+    }
 }

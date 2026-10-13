@@ -93,6 +93,15 @@ export interface AppInfo {
   labels: Record<string, string>;
   catalog: { units: Entity[]; techs: Entity[]; buildings: Entity[] };
   tips: Tip[];
+  benchmarks: Benchmark[];
+  benchmarks_source: string;
+}
+
+/** Aldeanos de referencia para una edad objetivo. */
+export interface Benchmark {
+  age: Age;
+  max: number;
+  high: number;
 }
 
 export interface Tip {
@@ -149,7 +158,9 @@ export type Task =
   | { kind: "lure"; pool: string }
   | { kind: "build"; building: string; placement: number }
   | { kind: "wait"; building: string }
-  | { kind: "idle" };
+  | { kind: "idle"; reason: IdleReason };
+
+export type IdleReason = "exhausted" | "not_arrived" | "waiting_lure" | "no_wood_for_farm" | "other";
 
 export type SimEvent =
   | { type: "villager_created"; villager: number; assignment: string }
@@ -193,6 +204,10 @@ export interface Summary {
   gathered: Record<Resource, number>;
   spent: Record<Resource, number>;
   buildings: [string, number][];
+  /** Al terminar: aldeanos por pool ("build", "idle"). */
+  final_villagers: Record<string, number>;
+  /** Al terminar: ingreso por minuto con ese reparto. */
+  final_income_per_min: Record<Resource, number>;
 }
 
 export interface Timeline {

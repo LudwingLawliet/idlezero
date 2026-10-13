@@ -9,7 +9,7 @@ export type Selection = { kind: "villager"; id: number } | { kind: "building"; p
 const STRIP_W = 64;
 const STRIP_GAP = 18;
 const TOP = 90; // espacio para cabeceras y la meta
-const BOTTOM = 120; // nombres de columna + bloque de inicio
+const BOTTOM = 170; // nombres de columna + bloque de inicio + fila de aldeanos
 const BADGE = 9; // radio de las insignias de tarea
 const CHEVRON_EVERY = 60; // segundos entre flechas de seguimiento
 const MIN_K = 0.2;
@@ -29,11 +29,19 @@ interface Props {
   civIcon?: string;
   /** Unidades, edificios y tecnologías del objetivo, con su segundo de pago. */
   goalRows?: GoalRow[];
+  /** Rango de aldeanos de referencia para colorear el carril del CU. */
+  range?: { max: number; high: number } | null;
 }
 
 type View = { x: number; y: number; k: number };
 
 /** Recurso de un tramo (para el color), o null si construye, espera o no hace nada. */
+/** Clase de color de un tramo: recurso, construir o sin tarea (rojo). */
+function segClass(s: Segment, labels: Labels): string {
+  if (s.task.kind === "idle" && s.task.reason !== "other") return "idle";
+  return segResource(s, labels) ?? "build";
+}
+
 function segResource(s: Segment, labels: Labels): Resource | null {
   if (s.task.kind === "gather" || s.task.kind === "lure") return labels.poolResource(s.task.pool);
   if (s.task.kind === "build" && s.task.building === "farm") return "food";
@@ -59,11 +67,12 @@ interface ContentProps {
   goalTime: number | null;
   civIcon?: string;
   goalRows?: GoalRow[];
+  range?: { max: number; high: number } | null;
   onSelect: (s: Selection) => void;
   dragMoved: () => boolean;
 }
 
-const Content = memo(function Content({ layout, timeline, labels, selV, selB, selNode, goalTime, civIcon, goalRows, onSelect, dragMoved }: ContentProps) {
+const Content = memo(function Content({ layout, timeline, labels, selV, selB, selNode, goalTime, civIcon, goalRows, range, onSelect, dragMoved }: ContentProps) {
   const L = labels.ui;
   const { y } = layout;
   const stripsX = layout.right + 10;
@@ -88,8 +97,7 @@ const Content = memo(function Content({ layout, timeline, labels, selV, selB, se
       const chevrons: { x: number; y: number; cls: string }[] = [];
       const badges: { x: number; y: number; icon: string; cls: string }[] = [];
       segs.forEach((s, i) => {
-        const res = segResource(s, labels);
-        const cls = res ?? "build";
+        const cls = segClass(s, labels);
         const y0 = y(s.start);
         const y1 = y(s.end);
         // Conector: del punto anterior a la columna de la nueva tarea.
@@ -116,7 +124,7 @@ const Content = memo(function Content({ layout, timeline, labels, selV, selB, se
   return (
     <g transform={`translate(0 ${TOP})`}>
       <defs>
-        {(["food", "wood", "gold", "stone", "build", "link", "sel"] as const).map((c) => (
+        {(["food", "wood", "gold", "stone", "build", "idle", "link", "sel"] as const).map((c) => (
           <marker key={c} id={`arr-${c}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M 0 0 L 10 5 L 0 10 z" className={`arrowhead ${c}`} />
           </marker>
@@ -185,8 +193,30 @@ const Content = memo(function Content({ layout, timeline, labels, selV, selB, se
         </g>
       ))}
 
-      {/* Carril del CU */}
+      {/* Carril del CU: verde dentro del rango de aldeanos de referencia,
+          amarillo por encima y rojo muy por encima. */}
       <rect x={TC_X} y={0} width={TC_W} height={layout.height} rx={8} className="tc" />
+      {range &&
+        (() => {
+          const born = layout.births.map((b) => b.time).sort((a, b) => a - b);
+          const at = (n: number) => (n < born.length ? born[n] : layout.end);
+          const tMax = at(range.max);
+          const tHigh = at(range.high);
+          const bands: [number, number, string][] = [
+            [0, tMax, "ok"],
+            [tMax, tHigh, "high"],
+            [tHigh, layout.end, "very-high"],
+          ];
+          return bands
+            .filter(([a, b]) => b > a)
+            .map(([a, b, cls]) => (
+              <rect key={cls} x={TC_X + 3} y={y(b)} width={TC_W - 6} height={y(a) - y(b)} rx={5} className={`tc-band ${cls}`}>
+                <title>
+                  {`${L.tcRange}: ≤ ${range.max} · ${cls === "ok" ? L.tcRangeOk : cls === "high" ? L.tcRangeHigh : L.tcRangeVeryHigh}`}
+                </title>
+              </rect>
+            ));
+        })()}
 
       {/* Edificios: caja con ícono, hora, duración y constructores; flecha hacia el CU */}
       {layout.buildings.map((b) => {
@@ -391,13 +421,17 @@ const Cursor = memo(function Cursor({ t, layout, timeline }: { t: number; layout
 
 // ---------- contenedor: zoom, paneo y teclado ----------
 
-export default function EconomyMap({ layout, timeline, tree, labels, selected, onSelect, cursor, onCursor, goalTime, civIcon, goalRows }: Props) {
+export default function EconomyMap({ layout, timeline, tree, labels, selected, onSelect, cursor, onCursor, goalTime, civIcon, goalRows, range }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const layer = useRef<SVGGElement>(null);
   const view = useRef<View>({ x: 0, y: 0, k: 1 });
   const frame = useRef(0);
   const drag = useRef<{ x: number; y: number; vx: number; vy: number; moved: boolean } | null>(null);
   const lastCursor = useRef<number | null>(null);
+  const selRef = useRef<number | null>(null);
+  // Fila de aldeanos: se desplaza por código (overflow:auto rompe los clics en WebKitGTK).
+  const rowRef = useRef<HTMLDivElement>(null);
+  const scrollRow = (dx: number) => rowRef.current?.scrollBy({ left: dx, behavior: "smooth" });
   const L = labels.ui;
 
   const stripsX = layout.right + 10;
@@ -436,6 +470,29 @@ export default function EconomyMap({ layout, timeline, tree, labels, selected, o
   }, [layout, width, height, setView]);
   const toEnd = useCallback(() => setView((v) => ({ ...v, y: 20 })), [setView]);
 
+  // Aldeanos en orden de nacimiento (para la fila de botones y ←/→).
+  const order = useMemo(() => [...layout.births].sort((a, b) => a.time - b.time || a.villager - b.villager), [layout]);
+  // Centrar la vista en la rama de un aldeano (su nacimiento y sus columnas).
+  const focusOn = useCallback(
+    (id: number) => {
+      const el = box.current;
+      const b = layout.births.find((x) => x.villager === id);
+      if (!el || !b) return;
+      const xs = layout.segments.filter((s) => s.villager === id).map((s) => s.x);
+      const cx = xs.length ? (Math.min(TC_X, ...xs) + Math.max(TC_X + TC_W, ...xs)) / 2 : TC_X;
+      const cy = TOP + layout.y(Math.min(layout.end, b.time + 90));
+      setView((v) => ({ ...v, x: el.clientWidth / 2 - cx * v.k, y: el.clientHeight / 2 - cy * v.k }));
+    },
+    [layout, setView],
+  );
+  const pick = useCallback(
+    (id: number) => {
+      onSelect({ kind: "villager", id });
+      focusOn(id);
+    },
+    [onSelect, focusOn],
+  );
+
   // Vista inicial: el inicio (abajo) a la vista.
   useEffect(home, [home]);
 
@@ -445,6 +502,10 @@ export default function EconomyMap({ layout, timeline, tree, labels, selected, o
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      if (rowRef.current?.parentElement?.contains(e.target as Node)) {
+        rowRef.current.scrollLeft += e.deltaY || e.deltaX;
+        return;
+      }
       const r = el.getBoundingClientRect();
       if (e.shiftKey) setView((v) => ({ ...v, y: v.y - (e.deltaY || e.deltaX) }));
       else zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015));
@@ -469,8 +530,17 @@ export default function EconomyMap({ layout, timeline, tree, labels, selected, o
         "-": () => zoomAt(cx, cy, 0.8),
         ArrowUp: () => setView((v) => ({ ...v, y: v.y + step })),
         ArrowDown: () => setView((v) => ({ ...v, y: v.y - step })),
-        ArrowLeft: () => setView((v) => ({ ...v, x: v.x + step })),
-        ArrowRight: () => setView((v) => ({ ...v, x: v.x - step })),
+        ArrowLeft: () => {
+          // Con un aldeano elegido, ←/→ pasan al anterior o al siguiente.
+          const i = selRef.current === null ? -1 : order.findIndex((b) => b.villager === selRef.current);
+          if (i >= 0) pick(order[Math.max(0, i - 1)].villager);
+          else setView((v) => ({ ...v, x: v.x + step }));
+        },
+        ArrowRight: () => {
+          const i = selRef.current === null ? -1 : order.findIndex((b) => b.villager === selRef.current);
+          if (i >= 0) pick(order[Math.min(order.length - 1, i + 1)].villager);
+          else setView((v) => ({ ...v, x: v.x - step }));
+        },
         Home: home,
         End: toEnd,
         Escape: () => onSelect(null),
@@ -483,11 +553,15 @@ export default function EconomyMap({ layout, timeline, tree, labels, selected, o
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [zoomAt, setView, home, toEnd, onSelect]);
+  }, [zoomAt, setView, home, toEnd, onSelect, order, pick]);
 
   const dragMoved = useCallback(() => !!drag.current?.moved, []);
   const selV = selected?.kind === "villager" ? selected.id : null;
+  selRef.current = selV;
   const selB = selected?.kind === "building" ? selected.placement : null;
+  useEffect(() => {
+    rowRef.current?.querySelector(".vr-btn.active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [selV]);
   const selNode = useMemo(() => (selV !== null ? tree.find((n) => n.villager === selV) : undefined), [selV, tree]);
 
   // Cursor: solo cuando cambia el segundo, como mucho una vez por fotograma.
@@ -551,12 +625,48 @@ export default function EconomyMap({ layout, timeline, tree, labels, selected, o
             goalTime={goalTime}
             civIcon={civIcon}
             goalRows={goalRows}
+            range={range}
             onSelect={onSelect}
             dragMoved={dragMoved}
           />
           {cursor !== null && <Cursor t={cursor} layout={layout} timeline={timeline} />}
         </g>
       </svg>
+      <div className="villager-row" onMouseDown={(e) => e.stopPropagation()} onMouseMove={(e) => e.stopPropagation()}>
+        <span className="vr-label" title={L.villagerRowHint}>
+          {L.villagerRow}
+        </span>
+        <button className="vr-nav" onMouseDown={(e) => (e.stopPropagation(), scrollRow(-240))} aria-label="‹">
+          ‹
+        </button>
+        <div className="vr-buttons" ref={rowRef}>
+          {order.map((b) => {
+            const segs = layout.segments.filter((s) => s.villager === b.villager);
+            const last = segs[segs.length - 1];
+            const idle = segs.some((s) => s.task.kind === "idle" && s.task.reason !== "other" && s.end - s.start >= 10);
+            return (
+              <button
+                key={b.villager}
+                className={`vr-btn${selV === b.villager ? " active" : ""}${b.tc === null ? " initial" : ""}${idle ? " has-idle" : ""}`}
+                onMouseDown={(e) => {
+                  // Al pulsar (no al soltar): el mapa de debajo usa el arrastre.
+                  e.stopPropagation();
+                  if (e.button === 0) {
+                    if (selV === b.villager) onSelect(null);
+                    else pick(b.villager);
+                  }
+                }}
+                title={`a${b.villager} · ${clock(b.time)}${b.tc === null ? ` · ${L.initialVillager}` : ""}${last ? ` · ${labels.task(last.task)}` : ""}`}
+              >
+                {last && <img src={taskIcon(last, labels)} alt="" />}a{b.villager}
+              </button>
+            );
+          })}
+        </div>
+        <button className="vr-nav" onMouseDown={(e) => (e.stopPropagation(), scrollRow(240))} aria-label="›">
+          ›
+        </button>
+      </div>
     </div>
   );
 }

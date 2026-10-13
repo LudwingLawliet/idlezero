@@ -73,7 +73,23 @@ struct UpgradeFile {
     group: Vec<UpgradeGroup>,
 }
 
+/// Rango de aldeanos de referencia para una edad objetivo.
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
+pub struct Benchmark {
+    pub age: aoe2_data::Age,
+    pub max: u32,
+    pub high: u32,
+}
+
+#[derive(serde::Deserialize)]
+pub struct Benchmarks {
+    pub source: String,
+    pub source_en: String,
+    pub age: Vec<Benchmark>,
+}
+
 pub struct Bundle {
+    pub benchmarks: Benchmarks,
     pub classes: ArmorClasses,
     pub upgrade_groups: Vec<UpgradeGroup>,
     pub tips: Vec<Tip>,
@@ -96,6 +112,7 @@ pub fn bundle() -> &'static Bundle {
     B.get_or_init(|| Bundle {
         tips: parse::<TipsFile>("tips", data!("tips.toml")).tip,
         classes: parse("armor_classes", data!("armor_classes.toml")),
+        benchmarks: parse("benchmarks", data!("benchmarks.toml")),
         upgrade_groups: parse::<UpgradeFile>("upgrade_groups", data!("upgrade_groups.toml")).group,
         civs: aoe2_data::civs::parse_civs(data!("civs.json")).expect("civs.json embebido"),
         civ_bonuses: aoe2_data::civs::parse_bonuses(data!("civ_bonuses.toml")).expect("civ_bonuses.toml embebido"),

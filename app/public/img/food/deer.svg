@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b3a26"/><stop offset="1" stop-color="#2e1c12"/></linearGradient></defs><rect x="1" y="1" width="62" height="62" rx="8" fill="url(#g)" stroke="#c9a46a" stroke-width="2"/>
+<path d="M14 34c0-6 6-9 14-9h12l4-5 5 1 2 4-3 3-4 3v4c0 6-5 9-12 9h-6c-7 0-12-4-12-10z" fill="#b97a45" stroke="#4a2c14" stroke-width="1.5"/>
+<g fill="#f3e2c8" opacity=".85"><circle cx="24" cy="31" r="1.4"/><circle cx="30" cy="30" r="1.4"/><circle cx="27" cy="35" r="1.4"/><circle cx="34" cy="33" r="1.4"/></g>
+<path d="M47 21l-3-8M45 16l-5-3M47 21l5-7M50 16l5-1" fill="none" stroke="#e8d6b0" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="49" cy="24" r="1.4" fill="#1a0f06"/>
+<g stroke="#4a2c14" stroke-width="2.8" stroke-linecap="round"><line x1="20" y1="42" x2="18" y2="54"/><line x1="25" y1="43" x2="25" y2="55"/><line x1="37" y1="43" x2="38" y2="55"/><line x1="42" y1="41" x2="45" y2="53"/></g>
+<path d="M14 32l-4-2" stroke="#f3e2c8" stroke-width="3" stroke-linecap="round"/>
+</svg>

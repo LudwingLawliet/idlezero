@@ -239,7 +239,7 @@ pub fn policy_order(base: &Scenario, goal: &Goal) -> BuildOrder {
                 .iter()
                 .map(|b| aoe2_sim::orders::BuildingTarget { building: b.building.clone(), count: b.count })
                 .collect(),
-            farm_wood: true,
+            avoid_idle: true,
         },
     }
 }
@@ -252,6 +252,9 @@ fn next_age(a: Age) -> Option<Age> {
         Age::Imperial => None,
     }
 }
+
+/// Planes desde los que se lanza el refinamiento local.
+const REFINE_STARTS: usize = 3;
 
 impl<'a> Optimizer<'a> {
     /// `base` aporta datos y mapa; su orden se reemplaza por la orden base.
@@ -295,7 +298,7 @@ impl<'a> Optimizer<'a> {
     /// Copia en la que los granjeros sin madera esperan quietos.
     fn classic(&self) -> Optimizer<'a> {
         let mut sc = self.sc.clone();
-        sc.order.auto.farm_wood = false;
+        sc.order.auto.avoid_idle = false;
         Optimizer {
             sc,
             per_villager: self.per_villager,
@@ -1067,6 +1070,10 @@ impl<'a> Optimizer<'a> {
             }
         };
         let mut finished = self.policy_search();
+        // Puntos de partida extra para el refinamiento: el mejor plan de las
+        // políticas (de cada variante), aunque el haz encuentre otros mejores.
+        let by_time = |a: &Plan, b: &Plan| a.time.unwrap_or(u32::MAX).cmp(&b.time.unwrap_or(u32::MAX)).then_with(|| a.choices.cmp(&b.choices));
+        let mut refine_from: Vec<Plan> = finished.iter().min_by(|a, b| by_time(a, b)).cloned().into_iter().collect();
         // Semillas (p. ej. el mejor plan neutro re-simulado con esta civilización).
         let no_houses = self.sc.civ.as_ref().is_some_and(|c| c.no_houses());
         for seed in self.seeds.clone() {
@@ -1117,14 +1124,35 @@ impl<'a> Optimizer<'a> {
                 passes.push((Heuristic::Macro, self.cfg.beam_width * 4));
             }
         }
-        // Objetivos baratos: explorar también con los granjeros quietos sin
-        // madera (la regla cambia lo que el haz poda) y re-simular esos planes
-        // aquí, con la regla normal.
-        if extra && self.sc.order.auto.farm_wood {
+        // Explorar también con la regla clásica (aldeanos quietos cuando su
+        // pool no tiene trabajo): el haz es sensible a las reglas y a veces
+        // encuentra así planes mejores. Esos planes se re-simulan aquí, con la
+        // regla normal, que nunca los empeora.
+        if self.sc.order.auto.avoid_idle {
             let classic = self.classic();
-            let bound = finished.iter().filter_map(|p| p.time).min().or(self.hint_bound);
-            for (h, w) in [(Heuristic::Simple, self.cfg.beam_width), (Heuristic::Macro, self.cfg.beam_width * 2)] {
-                let (mut plans, sims) = classic.beam(h, bound, w);
+            // Cota propia (de sus políticas), como si buscara sola: la de la
+            // variante normal poda planes que el haz clásico necesita.
+            let mut cpol = classic.policy_search();
+            let mut cbest = cpol.iter().filter_map(|p| p.time).min().or(self.hint_bound);
+            // Sus mejores planes de política también son candidatos (y puntos
+            // de partida del refinamiento).
+            cpol.sort_by(|a, b| a.time.unwrap_or(u32::MAX).cmp(&b.time.unwrap_or(u32::MAX)).then_with(|| a.choices.cmp(&b.choices)));
+            for (i, p) in cpol.into_iter().take(3).enumerate() {
+                let time = self.simulate_choices(&p.choices, None, false).time;
+                let plan = Plan { time, choices: p.choices };
+                if i == 0 {
+                    refine_from.push(plan.clone());
+                }
+                finished.push(plan);
+            }
+            let mut cpasses = vec![(Heuristic::Macro, self.cfg.beam_width), (Heuristic::Macro, self.cfg.beam_width * 2)];
+            if extra {
+                cpasses.push((Heuristic::Simple, self.cfg.beam_width));
+                cpasses.push((Heuristic::Macro, self.cfg.beam_width * 4));
+            }
+            for (h, w) in cpasses {
+                let (mut plans, sims) = classic.beam(h, cbest, w);
+                cbest = plans.iter().filter_map(|p| p.time).chain(cbest).min();
                 // Solo los mejores: re-simular todos costaría más que el haz.
                 plans.sort_by(|a, b| a.time.unwrap_or(u32::MAX).cmp(&b.time.unwrap_or(u32::MAX)).then_with(|| a.choices.cmp(&b.choices)));
                 plans.truncate(8);
@@ -1133,13 +1161,35 @@ impl<'a> Optimizer<'a> {
                     let time = self.simulate_choices(&p.choices, None, false).time;
                     finished.push(Plan { time, choices: p.choices });
                 }
+                lap(&format!("haz clásico {h:?} ancho {w}: mejor {:?}", finished.iter().filter_map(|p| p.time).min()));
             }
-            lap(&format!("haz sin madera para granjas: mejor {:?}", finished.iter().filter_map(|p| p.time).min()));
         }
         let key = |pl: &Plan| pl.time.unwrap_or(u32::MAX);
         finished.sort_by(|a, b| key(a).cmp(&key(b)).then_with(|| a.choices.cmp(&b.choices)));
-        let first = finished.first().cloned().unwrap_or(Plan { time: None, choices: Vec::new() });
-        let best = self.normalize_clicks(self.refine(first));
+        // Refinar desde los mejores candidatos distintos: la búsqueda local
+        // depende mucho del punto de partida (sobre todo en objetivos largos).
+        let mut starts: Vec<Plan> = Vec::new();
+        for p in finished.iter().filter(|p| p.time.is_some()) {
+            if starts.len() >= REFINE_STARTS {
+                break;
+            }
+            if !starts.iter().any(|q| q.choices == p.choices) {
+                starts.push(p.clone());
+            }
+        }
+        for p in refine_from {
+            if p.time.is_some() && !starts.iter().any(|q| q.choices == p.choices) {
+                starts.push(p);
+            }
+        }
+        if starts.is_empty() {
+            starts.push(finished.first().cloned().unwrap_or(Plan { time: None, choices: Vec::new() }));
+        }
+        let best = starts
+            .into_iter()
+            .map(|p| self.normalize_clicks(self.refine(p)))
+            .min_by(|a, b| a.time.unwrap_or(u32::MAX).cmp(&b.time.unwrap_or(u32::MAX)).then_with(|| a.choices.cmp(&b.choices)))
+            .unwrap();
         lap("refinamiento");
         let run = self.simulate_choices(&best.choices, None, true);
         let best = Plan { time: run.time, ..best };

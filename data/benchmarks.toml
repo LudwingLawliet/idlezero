@@ -1,0 +1,27 @@
+# Rangos de referencia de aldeanos según la edad objetivo, para colorear el
+# carril del CU (verde dentro del rango, amarillo por encima, rojo muy por
+# encima). Aproximados: población típica al hacer clic en órdenes de
+# construcción populares de la comunidad (scouts/arqueros a Feudal con 19–23,
+# Fast Castle con 27–30, Imperial rápido con ~31–40). No son reglas del juego.
+source = "Aproximado a partir de órdenes de construcción populares de la comunidad (AoE2 DE)."
+source_en = "Approximated from popular community build orders (AoE2 DE)."
+
+[[age]]
+age = "Dark"
+max = 22
+high = 26
+
+[[age]]
+age = "Feudal"
+max = 24
+high = 30
+
+[[age]]
+age = "Castle"
+max = 33
+high = 40
+
+[[age]]
+age = "Imperial"
+max = 60
+high = 80

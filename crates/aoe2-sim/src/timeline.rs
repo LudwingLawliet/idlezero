@@ -147,6 +147,10 @@ pub struct Summary {
     pub spent: Gathered,
     /// (edificio, segundo en que se terminó).
     pub buildings: Vec<(String, u32)>,
+    /// Al terminar: aldeanos por pool ("build" = construyendo, "idle" = sin tarea).
+    pub final_villagers: BTreeMap<String, u32>,
+    /// Al terminar: ingreso estimado por minuto con ese reparto.
+    pub final_income_per_min: Gathered,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]

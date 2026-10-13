@@ -18,6 +18,14 @@ export interface Labels {
 export type Kind = "unit" | "tech" | "building";
 
 const FARM_ID = 50;
+// Íconos de comida dibujados para IdleZero (public/img/food): aoe2techtree no los trae.
+const FOOD_ICONS = ["sheep", "boar", "berries", "deer", "fish"];
+
+/** Ícono propio de un pool de comida, por su id (p. ej. "boar", "shore_fish"). */
+export function foodIcon(pool: string): string | null {
+  const k = FOOD_ICONS.find((f) => pool === f || pool.includes(f));
+  return k ? `/img/food/${k}.svg` : null;
+}
 
 export function makeLabels(info: AppInfo, lang: string, map: MapInfo | undefined): Labels {
   const t = (key: string) => info.labels[key] ?? key;
@@ -34,6 +42,8 @@ export function makeLabels(info: AppInfo, lang: string, map: MapInfo | undefined
     poolResource: (id) => (id === "farms" ? "food" : map?.pools.find((p) => p.id === id)?.resource ?? "food"),
     poolIcon: (id) => {
       if (id === "farms") return `/img/building/${FARM_ID}.png`;
+      const own = foodIcon(id);
+      if (own) return own;
       const r = map?.pools.find((p) => p.id === id)?.resource ?? "food";
       return `/img/resource/${r}.png`;
     },
@@ -52,8 +62,10 @@ export function makeLabels(info: AppInfo, lang: string, map: MapInfo | undefined
           return `${u.build}: ${name("building", task.building)}`;
         case "wait":
           return `${u.waiting} ${name("building", task.building)}`;
-        default:
-          return u.idle;
+        default: {
+          const why = (u as unknown as Record<string, string>)[`idle_${task.reason}`];
+          return why ? `${u.idle}: ${why}` : u.idle;
+        }
       }
     },
   };

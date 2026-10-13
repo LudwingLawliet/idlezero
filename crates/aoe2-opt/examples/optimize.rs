@@ -86,6 +86,7 @@ fn main() {
             .iter()
             .take(3)
             .map(|a| match a.delta {
+                Some(d) if a.tc_idle > 0 => format!("{} {:+} s (CU parado {} s)", l.pool(&a.choice.pool), d, a.tc_idle),
                 Some(d) => format!("{} {:+} s", l.pool(&a.choice.pool), d),
                 None => format!("{} ✗", l.pool(&a.choice.pool)),
             })

@@ -1429,13 +1429,29 @@ impl<'a> Sim<'a> {
         if pool == default || Some(default) == self.farm_pool {
             return None;
         }
-        if Some(pool) == self.farm_pool && self.sc.order.auto.farm_wood {
-            // Sin madera para la granja: cortar madera mientras tanto; tras
-            // cada entrega vuelve a intentar la granja (`after_deposit`).
-            self.state.villagers[vi].pool = default;
-            let work = self.find_work_in(vi);
-            self.state.villagers[vi].pool = pool;
-            return work;
+        if self.sc.order.auto.avoid_idle && !self.pool_exhausted(pool) {
+            // Trabajo temporal; tras cada entrega (`after_deposit`) o en cuanto
+            // su pool tiene trabajo (`act`) vuelve a él.
+            let temp: Vec<usize> = if Some(pool) == self.farm_pool {
+                vec![default] // sin madera para la granja: cortar madera
+            } else {
+                // Otra comida cercana sin atraer nada, y si no, madera.
+                let food: Vec<usize> = (0..self.pools.len())
+                    .filter(|&p| p != pool && Some(p) != self.farm_pool && self.pool_resource(p) == Some(aoe2_data::rates::Resource::Food))
+                    .collect();
+                food.into_iter().chain(std::iter::once(default)).collect()
+            };
+            for p in temp {
+                if self.plain_work(p) {
+                    self.state.villagers[vi].pool = p;
+                    let work = self.find_work_in(vi);
+                    self.state.villagers[vi].pool = pool;
+                    if work.is_some() {
+                        return work;
+                    }
+                }
+            }
+            return None;
         }
         if self.pool_exhausted(pool) {
             // Agotado y sin siguiente: pasa al pool por defecto para siempre.
@@ -1469,6 +1485,22 @@ impl<'a> Sim<'a> {
             return Some(Activity::Gathering(Target::Source(si)));
         }
         None
+    }
+
+    /// Recurso de un pool (por su primera fuente).
+    fn pool_resource(&self, pool: usize) -> Option<aoe2_data::rates::Resource> {
+        self.state.sources.iter().find(|s| s.pool == pool).map(|s| self.sc.rates.tasks[s.task].resource)
+    }
+
+    /// El pool tiene ya una fuente lista para recolectar sin atraer nada
+    /// (la primera disponible en el orden del mapa, como `find_work_in`).
+    fn plain_work(&self, pool: usize) -> bool {
+        let now = self.state.time;
+        self.state
+            .sources
+            .iter()
+            .find(|s| s.pool == pool && s.arrives_at <= now && s.remaining > EPS)
+            .is_some_and(|s| s.lure_seconds == 0 || s.lured)
     }
 
     /// Por qué el aldeano no encontró trabajo en su pool.
@@ -1516,17 +1548,23 @@ impl<'a> Sim<'a> {
 
     /// Un segundo de vida de un aldeano, con presupuesto de tiempo continuo.
     fn act(&mut self, vi: usize) {
-        // Granjero cortando madera mientras esperaba: en cuanto alcanza para la
-        // granja, la siembra (como haría el jugador).
-        if let Some(fp) = self.farm_pool {
+        // Aldeano con trabajo temporal fuera de su pool: vuelve en cuanto su
+        // pool tiene trabajo (granja pagable, ciervos llegados, jabalí atraído).
+        if self.sc.order.auto.avoid_idle {
             let v = &self.state.villagers[vi];
             let away = match v.activity {
-                Activity::Gathering(Target::Source(s)) | Activity::Back { target: Target::Source(s), .. } => self.state.sources[s].pool != fp,
+                Activity::Gathering(Target::Source(s)) | Activity::Back { target: Target::Source(s), .. } => self.state.sources[s].pool != v.pool,
                 _ => false,
             };
-            if v.pool == fp && away {
-                let farm = self.sc.building_ref("farm").unwrap_or(ids::FARM);
-                if self.state.res.can_afford(&self.building_cost(farm)) {
+            if away {
+                let home = v.pool;
+                let ready = if Some(home) == self.farm_pool {
+                    let farm = self.sc.building_ref("farm").unwrap_or(ids::FARM);
+                    self.state.res.can_afford(&self.building_cost(farm))
+                } else {
+                    self.plain_work(home)
+                };
+                if ready {
                     self.state.villagers[vi].activity = Activity::Idle;
                 }
             }
@@ -1815,7 +1853,16 @@ impl<'a> Sim<'a> {
             self.snapshot();
         }
         self.events.sort_by_key(|e| e.time); // estable: conserva el orden dentro del mismo segundo
+        let snap = self.current_snapshot();
+        let inc = self.income();
         let mut summary = self.summary;
+        summary.final_villagers = snap.villagers_by_task;
+        summary.final_income_per_min = Gathered {
+            food: (inc.food * 60.0).round(),
+            wood: (inc.wood * 60.0).round(),
+            gold: (inc.gold * 60.0).round(),
+            stone: (inc.stone * 60.0).round(),
+        };
         summary.end_time = self.state.time;
         summary.villagers = self.state.villagers.len() as u32;
         let g = &mut summary.gathered;

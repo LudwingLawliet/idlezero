@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { AppInfo, CivView, Goal, OptimizeView, Plan, PlanView } from "./types";
+import { Age, AppInfo, CivView, Entity, Goal, OptimizeView, Plan, PlanView } from "./types";
 import { makeLabels } from "./labels";
 import { layoutMap } from "./layout";
 import EconomyMap, { MapLegend, Selection } from "./EconomyMap";
@@ -130,6 +130,24 @@ export default function App() {
   const events = planView?.events ?? view?.events ?? [];
   const goalTime = planView ? planView.time : view?.result.best.time ?? null;
   const layout = useMemo(() => (timeline ? layoutMap(timeline, mapInfo) : null), [timeline, mapInfo]);
+  // Rango de aldeanos de referencia: el del objetivo si pide aldeanos, si no
+  // el de su edad (la pedida o la de lo más avanzado que pide).
+  const range = useMemo(() => {
+    if (!info || !view) return null;
+    const g = view.result.goal;
+    if (g.villagers) return { max: g.villagers, high: g.villagers + 4 };
+    const order: Age[] = ["Dark", "Feudal", "Castle", "Imperial"];
+    const find = (list: Entity[], key: string) => list.find((e) => e.key === key || String(e.id) === key)?.age ?? "Dark";
+    const ages: Age[] = [
+      g.age ?? "Dark",
+      ...g.units.map((u) => find(info.catalog.units, u.unit)),
+      ...g.buildings.map((b) => find(info.catalog.buildings, b.building)),
+      ...g.techs.map((t) => find(info.catalog.techs, t)),
+    ];
+    const age = ages.reduce((a, b) => (order.indexOf(b) > order.indexOf(a) ? b : a), "Dark" as Age);
+    const bm = info.benchmarks.find((b) => b.age === age);
+    return bm ? { max: bm.max, high: bm.high } : null;
+  }, [info, view]);
   const goalRows = useMemo(
     () => (view && timeline && info && labels ? goalProgress(view.result.goal, timeline, info, labels) : undefined),
     [view, timeline, info, labels],
@@ -229,6 +247,7 @@ export default function App() {
                 goalTime={goalTime}
                 civIcon={civInfo?.icon}
                 goalRows={goalRows}
+                range={range}
               />
             )}
             {tab === "dash" && view && timeline && layout && (
@@ -262,6 +281,8 @@ export default function App() {
             plan={plan}
             civ={civ}
             tips={info.tips}
+            range={range}
+            rangeSource={info.benchmarks_source}
             planBusy={planBusy}
             onPlan={choosePlan}
           />

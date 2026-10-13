@@ -10,7 +10,7 @@ const COL_GAP = 52;
 const BUILD_W = 128; // ancho de un edificio en la zona izquierda
 const BUILD_GAP = 10;
 export const TC_X = 0;
-export const TC_W = 34;
+export const TC_W = 40;
 
 export interface Segment {
   villager: number;
@@ -108,9 +108,10 @@ export function layoutMap(tl: Timeline, map: MapInfo | undefined): MapLayout {
   const order = (map?.pools.map((p) => p.id) ?? []).filter((p) => used.has(p));
   for (const p of used) if (!order.includes(p)) order.push(p);
 
-  // Ramas dentro de cada columna: carril por aldeano y tramo continuo.
+  // Ramas dentro de cada columna: cada aldeano tiene un carril fijo según su
+  // orden de llegada, así las ramas no se cruzan dentro de la columna.
   const columns: Column[] = [];
-  const slotOf = new Map<string, number>(); // `${villager}:${segIndex}` -> slot
+  const slotOf = new Map<string, number>(); // índice de tramo -> carril
   let x = TC_X + TC_W + 46;
   const poolX: Record<string, number> = {};
   for (const pool of order) {
@@ -118,9 +119,11 @@ export function layoutMap(tl: Timeline, map: MapInfo | undefined): MapLayout {
       .map((s, i) => ({ ...s, i }))
       .filter((s) => gatherPool(s.task) === pool)
       .sort((a, b) => a.start - b.start || a.villager - b.villager);
-    const ls = lanes(inPool);
+    const laneOf = new Map<number, number>();
+    for (const s of inPool) if (!laneOf.has(s.villager)) laneOf.set(s.villager, laneOf.size);
+    const ls = inPool.map((s) => laneOf.get(s.villager)!);
     inPool.forEach((s, k) => slotOf.set(`${s.i}`, ls[k]));
-    const width = Math.max(1, ...ls.map((l) => l + 1)) * SLOT + 12;
+    const width = Math.max(1, laneOf.size) * SLOT + 12;
     columns.push({ pool, x, width });
     poolX[pool] = x + 6;
     x += width + COL_GAP;

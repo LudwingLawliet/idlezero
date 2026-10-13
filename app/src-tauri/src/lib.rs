@@ -85,6 +85,9 @@ struct AppInfo {
     labels: BTreeMap<String, String>,
     catalog: Catalog,
     tips: Vec<TipView>,
+    /// Aldeanos de referencia por edad objetivo (color del carril del CU).
+    benchmarks: Vec<bundle::Benchmark>,
+    benchmarks_source: String,
 }
 
 /// Consejo de juego (teclas y buenas prácticas) en el idioma pedido.
@@ -220,6 +223,8 @@ fn app_info(lang: String) -> AppInfo {
                 }
             })
             .collect(),
+        benchmarks: b.benchmarks.age.clone(),
+        benchmarks_source: if lang == "es" { b.benchmarks.source.clone() } else { b.benchmarks.source_en.clone() },
     }
 }
 

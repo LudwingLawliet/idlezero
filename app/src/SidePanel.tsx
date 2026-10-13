@@ -21,7 +21,53 @@ function Stock({ values, labels }: { values: number[]; labels: Labels }) {
   );
 }
 
-function Summary({ result, timeline, labels, goalTime, millis }: { result: OptResult; timeline: Timeline; labels: Labels; goalTime: number | null; millis: number }) {
+/** Reparto de aldeanos e ingreso al cumplir el objetivo: la economía con la que sigues. */
+export function AfterGoal({ timeline, labels }: { timeline: Timeline; labels: Labels }) {
+  const L = labels.ui;
+  const s = timeline.summary;
+  const rows = Object.entries(s.final_villagers ?? {}).sort((a, b) => b[1] - a[1]);
+  if (!rows.length) return null;
+  const max = Math.max(1, ...rows.map(([, n]) => n));
+  const name = (k: string) => (k === "build" ? L.building : k === "idle" ? L.idle : labels.pool(k));
+  const icon = (k: string) => (k === "build" ? "/img/building/70.png" : k === "idle" ? "/img/unit/83.png" : labels.poolIcon(k));
+  return (
+    <section className="after-goal">
+      <h3>{L.afterGoal}</h3>
+      <p className="muted tiny">{L.afterGoalNote}</p>
+      {rows.map(([k, n]) => (
+        <div className="bar" key={k}>
+          <span className="bar-label">
+            <img src={icon(k)} alt="" className="icon tiny" /> {name(k)}
+          </span>
+          <span className="bar-track">
+            <span className={`bar-fill ${k === "idle" ? "bad" : k === "build" ? "" : labels.poolResource(k)}`} style={{ width: `${(n / max) * 100}%` }} />
+          </span>
+          <span className="bar-n">{n}</span>
+        </div>
+      ))}
+      <h4>{L.incomePerMin}</h4>
+      <Stock values={RESOURCES.map((r) => s.final_income_per_min?.[r] ?? 0)} labels={labels} />
+    </section>
+  );
+}
+
+function Summary({
+  result,
+  timeline,
+  labels,
+  goalTime,
+  millis,
+  range,
+  rangeSource,
+}: {
+  result: OptResult;
+  timeline: Timeline;
+  labels: Labels;
+  goalTime: number | null;
+  millis: number;
+  range?: { max: number; high: number } | null;
+  rangeSource?: string;
+}) {
   const L = labels.ui;
   const s = timeline.summary;
   const idle = Object.entries(s.tc_idle_seconds).filter(([c]) => c !== "no_order");
@@ -46,7 +92,17 @@ function Summary({ result, timeline, labels, goalTime, millis }: { result: OptRe
       )}
       <div className="kv">
         <span>{L.villagers}</span>
-        <span>{timeline.villagers.length}</span>
+        {(() => {
+          const n = timeline.villagers.length;
+          if (!range) return <span>{n}</span>;
+          const cls = n <= range.max ? "good" : n <= range.high ? "warn" : "bad";
+          const txt = n <= range.max ? L.tcRangeOk : n <= range.high ? L.tcRangeHigh : L.tcRangeVeryHigh;
+          return (
+            <span className={cls} title={`${L.tcRange}: ≤ ${range.max}. ${rangeSource ?? ""}`}>
+              {n} <small>(≤ {range.max} · {txt})</small>
+            </span>
+          );
+        })()}
       </div>
       <div className="kv">
         <span>{L.townCenters}</span>
@@ -161,10 +217,31 @@ function VillagerDetail({ id, result, timeline, layout, labels, tips }: { id: nu
       </div>
       <h4>{L.gathered}</h4>
       <Stock values={v.gathered} labels={labels} />
+      {(() => {
+        // Tiempo sin tarea por causa, con una sugerencia para evitarlo.
+        const by = new Map<string, number>();
+        for (const sg of segs) if (sg.task.kind === "idle" && sg.task.reason !== "other") by.set(sg.task.reason, (by.get(sg.task.reason) ?? 0) + sg.end - sg.start);
+        if (!by.size) return null;
+        const T = L as unknown as Record<string, string>;
+        return (
+          <div className="idle-box">
+            <h4>{L.idleHere}</h4>
+            {[...by].map(([r, secs]) => (
+              <p key={r}>
+                <strong>
+                  {secs} s · {T[`idle_${r}`]}
+                </strong>
+                <br />
+                {T[`tip_${r}`]}
+              </p>
+            ))}
+          </div>
+        );
+      })()}
       <h4>{L.history}</h4>
       <ul className="history">
         {segs.map((s, i) => (
-          <li key={i}>
+          <li key={i} className={s.task.kind === "idle" && s.task.reason !== "other" ? "idle" : undefined}>
             <span className="time">
               {clock(s.start)}–{clock(s.end)}
             </span>
@@ -275,6 +352,8 @@ export default function SidePanel(props: {
   plan: Plan;
   civ: string;
   tips: Tip[];
+  range?: { max: number; high: number } | null;
+  rangeSource?: string;
   planBusy: boolean;
   onPlan: (p: Plan) => void;
 }) {
@@ -292,7 +371,8 @@ export default function SidePanel(props: {
           <p className="muted">{L.nothingSelected}</p>
         </section>
       )}
-      <Summary result={result} timeline={timeline} labels={labels} goalTime={props.goalTime} millis={props.millis} />
+      <Summary result={result} timeline={timeline} labels={labels} goalTime={props.goalTime} millis={props.millis} range={props.range} rangeSource={props.rangeSource} />
+      <AfterGoal timeline={timeline} labels={labels} />
       <section>
         <h3>{L.plans}</h3>
         <ul className="plans">
