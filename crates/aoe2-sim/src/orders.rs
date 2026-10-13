@@ -65,6 +65,10 @@ pub struct Auto {
     /// (los que pide el objetivo, p. ej. un castillo).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub buildings: Vec<BuildingTarget>,
+    /// Granjeros sin madera para su granja cortan madera mientras tanto (en
+    /// vez de quedarse quietos) y la siembran en cuanto alcanza.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub farm_wood: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

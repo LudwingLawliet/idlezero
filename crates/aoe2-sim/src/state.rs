@@ -120,6 +120,8 @@ pub struct Villager {
     pub farm: Option<usize>,
     /// Si en el último segundo no tuvo nada que hacer.
     pub idle: bool,
+    /// Causa de la última vez que no encontró trabajo.
+    pub idle_reason: crate::timeline::IdleReason,
 }
 
 /// Edificio en construcción (o terminado).

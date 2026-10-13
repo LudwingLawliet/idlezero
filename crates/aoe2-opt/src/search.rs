@@ -239,6 +239,7 @@ pub fn policy_order(base: &Scenario, goal: &Goal) -> BuildOrder {
                 .iter()
                 .map(|b| aoe2_sim::orders::BuildingTarget { building: b.building.clone(), count: b.count })
                 .collect(),
+            farm_wood: true,
         },
     }
 }
@@ -289,6 +290,25 @@ impl<'a> Optimizer<'a> {
             hint_bound: None,
             simulations: Default::default(),
         })
+    }
+
+    /// Copia en la que los granjeros sin madera esperan quietos.
+    fn classic(&self) -> Optimizer<'a> {
+        let mut sc = self.sc.clone();
+        sc.order.auto.farm_wood = false;
+        Optimizer {
+            sc,
+            per_villager: self.per_villager,
+            goal: self.goal,
+            cfg: self.cfg.clone(),
+            pools: self.pools.clone(),
+            target: self.target,
+            needs_stone: self.needs_stone,
+            relaxed: self.relaxed,
+            seeds: Vec::new(),
+            hint_bound: self.hint_bound,
+            simulations: Default::default(),
+        }
     }
 
     /// Acepta planes con el CU inactivo (si con la regla estricta no hay ninguno).
@@ -1056,6 +1076,9 @@ impl<'a> Optimizer<'a> {
                 .map(|c| if no_houses && c.build.as_deref() == Some("house") { Choice { build: None, builders: 0, ..c } } else { c })
                 .collect();
             let time = self.simulate_choices(&seed, None, false).time;
+            if dbg {
+                eprintln!("semilla: {time:?}");
+            }
             finished.push(Plan { time, choices: seed });
         }
         lap("políticas");
@@ -1072,7 +1095,15 @@ impl<'a> Optimizer<'a> {
         if short {
             passes.push((Heuristic::Simple, self.cfg.beam_width * 4));
         }
-        for (h, w) in passes {
+        // Si la búsqueda salió barata, una pasada Macro más ancha: el haz es
+        // sensible a pequeños cambios y esto lo estabiliza. El criterio es el
+        // número de simulaciones (determinista), no el reloj.
+        const CHEAP: usize = 200_000;
+        let mut i = 0;
+        let mut extra = false;
+        while i < passes.len() {
+            let (h, w) = passes[i];
+            i += 1;
             let bound = finished.iter().filter_map(|p| p.time).min().or(self.hint_bound);
             let (plans, sims) = self.beam(h, bound, w);
             self.simulations.fetch_add(sims, std::sync::atomic::Ordering::Relaxed);
@@ -1081,6 +1112,29 @@ impl<'a> Optimizer<'a> {
                 "haz {h:?} ancho {w}: mejor {:?}",
                 finished.iter().filter_map(|p| p.time).min()
             ));
+            if i == passes.len() && !extra && self.simulations.load(std::sync::atomic::Ordering::Relaxed) < CHEAP {
+                extra = true;
+                passes.push((Heuristic::Macro, self.cfg.beam_width * 4));
+            }
+        }
+        // Objetivos baratos: explorar también con los granjeros quietos sin
+        // madera (la regla cambia lo que el haz poda) y re-simular esos planes
+        // aquí, con la regla normal.
+        if extra && self.sc.order.auto.farm_wood {
+            let classic = self.classic();
+            let bound = finished.iter().filter_map(|p| p.time).min().or(self.hint_bound);
+            for (h, w) in [(Heuristic::Simple, self.cfg.beam_width), (Heuristic::Macro, self.cfg.beam_width * 2)] {
+                let (mut plans, sims) = classic.beam(h, bound, w);
+                // Solo los mejores: re-simular todos costaría más que el haz.
+                plans.sort_by(|a, b| a.time.unwrap_or(u32::MAX).cmp(&b.time.unwrap_or(u32::MAX)).then_with(|| a.choices.cmp(&b.choices)));
+                plans.truncate(8);
+                self.simulations.fetch_add(sims + plans.len(), std::sync::atomic::Ordering::Relaxed);
+                for p in plans {
+                    let time = self.simulate_choices(&p.choices, None, false).time;
+                    finished.push(Plan { time, choices: p.choices });
+                }
+            }
+            lap(&format!("haz sin madera para granjas: mejor {:?}", finished.iter().filter_map(|p| p.time).min()));
         }
         let key = |pl: &Plan| pl.time.unwrap_or(u32::MAX);
         finished.sort_by(|a, b| key(a).cmp(&key(b)).then_with(|| a.choices.cmp(&b.choices)));

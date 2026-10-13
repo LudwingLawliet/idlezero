@@ -30,7 +30,24 @@ pub enum Task {
     Build { building: String, placement: usize },
     /// Esperando recursos para colocar un edificio.
     Wait { building: String },
-    Idle,
+    /// Sin nada que hacer, con la causa.
+    Idle { reason: IdleReason },
+}
+
+/// Por qué un aldeano no tiene trabajo.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IdleReason {
+    /// Su pool está agotado y no hay a dónde pasar.
+    Exhausted,
+    /// La fuente aún no ha llegado (p. ej. ciervos que hay que empujar).
+    NotArrived,
+    /// Otro aldeano está atrayendo el jabalí.
+    WaitingLure,
+    /// No hay madera para la granja (o para resembrarla).
+    NoWoodForFarm,
+    /// Recién nacido o esperando la decisión del plan.
+    Other,
 }
 
 /// Estado segundo a segundo, en columnas (compacto para la interfaz).

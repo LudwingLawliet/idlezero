@@ -589,6 +589,7 @@ impl<'a> Sim<'a> {
             carry_resource: None,
             farm: None,
             idle: false,
+            idle_reason: crate::timeline::IdleReason::Other,
         });
         id
     }
@@ -1419,8 +1420,27 @@ impl<'a> Sim<'a> {
             // Pool agotado: pasar al siguiente según `auto.fallback`.
             match self.fallback.iter().find(|(a, _)| *a == pool) {
                 Some(&(_, next)) if self.pool_exhausted(pool) => self.state.villagers[vi].pool = next,
-                _ => return None,
+                _ => break,
             }
+        }
+        // Sin trabajo en su pool: evitar quedarse quieto si se puede.
+        let pool = self.state.villagers[vi].pool;
+        let default = self.pool(&self.sc.order.default_pool);
+        if pool == default || Some(default) == self.farm_pool {
+            return None;
+        }
+        if Some(pool) == self.farm_pool && self.sc.order.auto.farm_wood {
+            // Sin madera para la granja: cortar madera mientras tanto; tras
+            // cada entrega vuelve a intentar la granja (`after_deposit`).
+            self.state.villagers[vi].pool = default;
+            let work = self.find_work_in(vi);
+            self.state.villagers[vi].pool = pool;
+            return work;
+        }
+        if self.pool_exhausted(pool) {
+            // Agotado y sin siguiente: pasa al pool por defecto para siempre.
+            self.state.villagers[vi].pool = default;
+            return self.find_work_in(vi);
         }
         None
     }
@@ -1451,6 +1471,26 @@ impl<'a> Sim<'a> {
         None
     }
 
+    /// Por qué el aldeano no encontró trabajo en su pool.
+    fn idle_reason(&self, vi: usize) -> crate::timeline::IdleReason {
+        use crate::timeline::IdleReason;
+        let v = &self.state.villagers[vi];
+        if Some(v.pool) == self.farm_pool {
+            return IdleReason::NoWoodForFarm;
+        }
+        let now = self.state.time;
+        let live = self.state.sources.iter().filter(|s| s.pool == v.pool && s.remaining > EPS);
+        let mut reason = IdleReason::Exhausted;
+        for s in live {
+            if s.arrives_at > now {
+                reason = IdleReason::NotArrived;
+            } else if s.luring {
+                return IdleReason::WaitingLure;
+            }
+        }
+        reason
+    }
+
     fn find_farm(&mut self, vi: usize) -> Option<Activity> {
         let v = &self.state.villagers[vi];
         if let Some(f) = v.farm {
@@ -1476,6 +1516,21 @@ impl<'a> Sim<'a> {
 
     /// Un segundo de vida de un aldeano, con presupuesto de tiempo continuo.
     fn act(&mut self, vi: usize) {
+        // Granjero cortando madera mientras esperaba: en cuanto alcanza para la
+        // granja, la siembra (como haría el jugador).
+        if let Some(fp) = self.farm_pool {
+            let v = &self.state.villagers[vi];
+            let away = match v.activity {
+                Activity::Gathering(Target::Source(s)) | Activity::Back { target: Target::Source(s), .. } => self.state.sources[s].pool != fp,
+                _ => false,
+            };
+            if v.pool == fp && away {
+                let farm = self.sc.building_ref("farm").unwrap_or(ids::FARM);
+                if self.state.res.can_afford(&self.building_cost(farm)) {
+                    self.state.villagers[vi].activity = Activity::Idle;
+                }
+            }
+        }
         let mut budget = 1.0_f64;
         let mut idle = false;
         let mut guard = 0;
@@ -1491,6 +1546,7 @@ impl<'a> Sim<'a> {
                     Some(a) => a,
                     None => {
                         idle = true;
+                        self.state.villagers[vi].idle_reason = self.idle_reason(vi);
                         break;
                     }
                 },
@@ -1807,7 +1863,7 @@ impl<'a> Sim<'a> {
                 continue; // espera la decisión del optimizador
             }
             let task = match v.activity {
-                Activity::Idle => Task::Idle,
+                Activity::Idle => Task::Idle { reason: v.idle_reason },
                 Activity::Gathering(t) | Activity::ToDrop { target: t, .. } | Activity::Back { target: t, .. } => {
                     let pool = match t {
                         Target::Source(s) => self.state.sources[s].pool,
