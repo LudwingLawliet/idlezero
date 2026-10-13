@@ -26,6 +26,45 @@ pub struct BuildOrder {
     /// Hitos: cada uno se dispara una sola vez cuando se cumple `when`.
     #[serde(rename = "step", default)]
     pub steps: Vec<Step>,
+    /// Reglas automáticas (casas, puntos de entrega, edificios de edad…).
+    #[serde(default)]
+    pub auto: Auto,
+}
+
+/// Reglas que el simulador aplica solo, sin pasos explícitos. Las usa el
+/// optimizador para decidir únicamente lo importante (qué hace cada aldeano y
+/// cuándo subir de edad), y simplifican las órdenes escritas a mano.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Auto {
+    /// Pool del que salen los constructores automáticos.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub builders: Option<String>,
+    /// Empezar una casa cuando falten estas plazas o menos.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub houses: Option<u32>,
+    /// El primer aldeano de un pool lejano construye antes su punto de entrega.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub drop_sites: bool,
+    /// [agotado, siguiente]: al agotarse un pool sus aldeanos pasan al siguiente.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fallback: Vec<[String; 2]>,
+    /// Construir los edificios que piden las edades hasta esta.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub age_buildings: Option<Age>,
+    /// Tecnologías a investigar en cuanto se pueda (construye su edificio).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub research: Vec<String>,
+    /// Producción continua de una unidad.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub production: Option<Production>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Production {
+    pub unit: String,
+    pub count: u32,
+    /// Edificios productores a mantener.
+    pub buildings: u32,
 }
 
 /// Qué hace un aldeano: ir a un pool, o construir y después ir a `then`.
@@ -89,6 +128,8 @@ pub struct Step {
     pub at: Option<String>,
     /// Investigar una tecnología.
     pub research: Option<String>,
+    /// Entrenar `count` unidades (nombre corto de rules.toml).
+    pub train: Option<String>,
     /// Atraer una fuente (id del mapa, p. ej. "boar_2") con un aldeano de `from`.
     pub lure: Option<String>,
     /// Mover aldeanos de `from` a `to` (`count` ausente = todos).
@@ -102,6 +143,7 @@ pub enum StepAction<'a> {
     Research(&'a str),
     Move { from: &'a str, to: &'a str, count: Option<u32> },
     Lure { source: &'a str, from: &'a str },
+    Train { unit: &'a str, count: u32 },
 }
 
 fn one() -> u32 {
@@ -111,6 +153,12 @@ fn one() -> u32 {
 impl Step {
     /// Interpreta el paso; error si no tiene exactamente una acción válida.
     pub fn action(&self) -> Result<StepAction<'_>, String> {
+        if let Some(unit) = &self.train {
+            if self.build.is_some() || self.research.is_some() || self.to.is_some() || self.lure.is_some() {
+                return Err("cada paso necesita exactamente una acción".into());
+            }
+            return Ok(StepAction::Train { unit, count: self.count.unwrap_or(1) });
+        }
         if let Some(source) = &self.lure {
             if self.build.is_some() || self.research.is_some() || self.to.is_some() {
                 return Err("cada paso necesita exactamente una acción".into());

@@ -51,6 +51,18 @@ blacksmith = 103
 archery_range = 87
 stable = 101
 
+[names.units]
+villager = 83
+militia = 74
+spearman = 93
+archer = 4
+skirmisher = 7
+crossbowman = 24
+scout_cavalry = 448
+knight = 38
+cavalry_archer = 39
+monk = 125
+
 [names.techs]
 loom = 22
 feudal_age = 101
@@ -64,3 +76,11 @@ wheelbarrow = 213
 hand_cart = 249
 gold_mining = 55
 stone_mining = 278
+fletching = 199
+bodkin_arrow = 200
+bracer = 201
+padded_archer_armor = 211
+leather_archer_armor = 212
+forging = 67
+iron_casting = 68
+scale_barding_armor = 81

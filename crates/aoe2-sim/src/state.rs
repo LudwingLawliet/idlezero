@@ -57,6 +57,8 @@ pub struct SourceState {
     pub distance_with_drop_site: Option<f64>,
     pub drop_site: Option<u32>,
     pub has_drop_site: bool,
+    /// Ya hay un punto de entrega encargado para esta fuente.
+    pub drop_site_planned: bool,
     pub arrives_at: u32,
     pub lure_seconds: u32,
     pub lured: bool,
@@ -127,6 +129,7 @@ pub struct Site {
 pub enum Job {
     Villager,
     Research(u32),
+    Unit(u32),
 }
 
 /// Producción o investigación en curso en un edificio.
@@ -169,12 +172,27 @@ pub struct GameState {
     pub research: Vec<Running>,
     /// Investigaciones pedidas por la orden que aún no empiezan.
     pub pending_research: Vec<u32>,
+    /// Unidades en entrenamiento (una por edificio productor).
+    pub training: Vec<Running>,
+    /// Unidades pedidas: (unidad, cuántas faltan por empezar).
+    pub train_orders: Vec<(u32, u32)>,
+    /// Unidades militares terminadas, por id.
+    pub units: std::collections::BTreeMap<u32, u32>,
     pub next_villager: u32,
 }
 
 impl GameState {
     pub fn pop(&self) -> u32 {
-        self.villagers.len() as u32 + self.scouts
+        self.villagers.len() as u32 + self.scouts + self.units.values().sum::<u32>()
+    }
+
+    /// Edificios de este tipo terminados o en obra.
+    pub fn count_planned(&self, building: u32) -> usize {
+        self.count_built(building) + self.sites.iter().filter(|s| s.building == building && !s.done).count()
+    }
+
+    pub fn units_of(&self, unit: u32) -> u32 {
+        self.units.get(&unit).copied().unwrap_or(0)
     }
 
     pub fn count_built(&self, building: u32) -> usize {

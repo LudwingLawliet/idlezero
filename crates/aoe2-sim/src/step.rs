@@ -18,8 +18,16 @@ pub struct Stop {
     pub age: Option<Age>,
 }
 
+#[derive(Clone)]
 pub struct Sim<'a> {
     sc: &'a Scenario,
+    /// Si es true, los aldeanos sin asignación en la orden esperan una
+    /// decisión externa (el optimizador) en lugar de ir al pool por defecto.
+    external: bool,
+    decision: Option<u32>,
+    max_villagers: Option<u32>,
+    builders_pool: usize,
+    fallback: Vec<(usize, usize)>,
     pub state: GameState,
     pools: Vec<String>,
     farm_pool: Option<usize>,
@@ -74,6 +82,7 @@ impl<'a> Sim<'a> {
                 distance_with_drop_site: s.distance_with_drop_site,
                 drop_site: s.drop_site,
                 has_drop_site: false,
+                drop_site_planned: false,
                 arrives_at: s.arrives_at_s,
                 lure_seconds: s.lure_seconds,
                 lured: false,
@@ -117,6 +126,9 @@ impl<'a> Sim<'a> {
                     check_pool(from)?;
                     check_pool(to)?;
                 }
+                StepAction::Train { unit, .. } => {
+                    sc.rules.unit_id(unit).ok_or(format!("unidad desconocida en la orden: {unit}"))?;
+                }
                 StepAction::Lure { source, from } => {
                     check_pool(from)?;
                     let s = sc.map.sources.iter().find(|s| s.id == source);
@@ -137,12 +149,42 @@ impl<'a> Sim<'a> {
             }
         }
 
+        let auto = &order.auto;
+        let builders_name = auto.builders.as_deref().unwrap_or(&order.default_pool);
+        check_pool(builders_name)?;
+        for [a, b] in &auto.fallback {
+            check_pool(a)?;
+            check_pool(b)?;
+        }
+        for t in &auto.research {
+            sc.rules.tech_id(t).ok_or(format!("tecnología desconocida en auto.research: {t}"))?;
+        }
+        if let Some(p) = &auto.production {
+            sc.rules.unit_id(&p.unit).ok_or(format!("unidad desconocida en auto.production: {}", p.unit))?;
+        }
+        let builders_pool = pools.iter().position(|p| p == builders_name).unwrap();
+        let fallback = auto
+            .fallback
+            .iter()
+            .map(|[a, b]| (pools.iter().position(|p| p == a).unwrap(), pools.iter().position(|p| p == b).unwrap()))
+            .collect();
+
         let villager = sc.data.unit(ids::VILLAGER).ok_or("falta el aldeano en game_data")?;
         let n_tasks = sc.rates.tasks.len();
         let n_pools = pools.len();
         let start = &sc.map.start;
+        let train_orders = auto
+            .production
+            .iter()
+            .map(|p| (sc.rules.unit_id(&p.unit).unwrap(), p.count))
+            .collect();
         let mut sim = Sim {
             sc,
+            external: false,
+            decision: None,
+            max_villagers: order.max_villagers,
+            builders_pool,
+            fallback,
             state: GameState {
                 time: 0,
                 age: Age::Dark,
@@ -165,6 +207,9 @@ impl<'a> Sim<'a> {
                 tc: None,
                 research: Vec::new(),
                 pending_research: Vec::new(),
+                training: Vec::new(),
+                train_orders,
+                units: BTreeMap::new(),
                 next_villager: 1,
             },
             pools,
@@ -232,6 +277,110 @@ impl<'a> Sim<'a> {
                 }
             }
         }
+        self.finish()
+    }
+
+    /// Como `new`, pero los aldeanos sin asignación esperan `decide`.
+    pub fn new_external(sc: &'a Scenario) -> Result<Sim<'a>, String> {
+        let mut sim = Sim::new(sc)?;
+        sim.external = true;
+        Ok(sim)
+    }
+
+    /// Avanza hasta que nace un aldeano que necesita decisión, o hasta
+    /// `max_seconds`, o hasta que `done` diga que se cumplió el objetivo.
+    /// Devuelve el aldeano que espera decisión, si lo hay.
+    pub fn advance(&mut self, max_seconds: u32, done: &dyn Fn(&GameState) -> bool) -> Option<u32> {
+        if self.ticks.is_empty() {
+            self.snapshot();
+        }
+        while self.decision.is_none() && self.state.time < max_seconds && !done(&self.state) {
+            self.tick();
+        }
+        self.decision
+    }
+
+    /// Asigna el aldeano que esperaba decisión a un pool (aplica las reglas
+    /// automáticas, como construir antes su punto de entrega).
+    pub fn decide(&mut self, pool: &str) {
+        let id = self.decision.take().expect("no hay decisión pendiente");
+        let vi = self.vidx(id);
+        let p = self.pool(pool);
+        self.assign_pool(vi, p);
+        self.events.push(TimedEvent { time: self.state.time, event: Event::Decision { villager: id, choice: pool.to_owned() } });
+    }
+
+    /// Pide una investigación (p. ej. el clic de edad) desde fuera.
+    pub fn queue_research(&mut self, tech: &str) {
+        let id = self.sc.rules.tech_id(tech).expect("tecnología conocida");
+        if !self.state.pending_research.contains(&id) && !self.state.has_tech(id) {
+            self.state.pending_research.push(id);
+        }
+    }
+
+    pub fn set_max_villagers(&mut self, n: Option<u32>) {
+        self.max_villagers = n;
+    }
+
+    pub fn max_villagers(&self) -> Option<u32> {
+        self.max_villagers
+    }
+
+    pub fn pending_decision(&self) -> Option<u32> {
+        self.decision
+    }
+
+    pub fn pool_names(&self) -> &[String] {
+        &self.pools
+    }
+
+    pub fn scenario(&self) -> &'a Scenario {
+        self.sc
+    }
+
+    pub fn summary(&self) -> &Summary {
+        &self.summary
+    }
+
+    /// ¿El pool tiene fuentes con recurso ahora (o en el futuro) o es de granjas?
+    pub fn pool_has_resources(&self, pool: &str) -> bool {
+        let Some(p) = self.pools.iter().position(|x| x == pool) else { return false };
+        Some(p) == self.farm_pool || self.state.sources.iter().any(|s| s.pool == p && s.remaining > EPS)
+    }
+
+    /// Ingreso estimado por segundo de cada recurso con la asignación actual
+    /// (tasa efectiva con caminata; cuenta solo aldeanos que recolectan).
+    pub fn income(&self) -> Resources {
+        let mut inc = Resources::default();
+        for v in &self.state.villagers {
+            if v.activity.is_building() || v.idle {
+                continue;
+            }
+            let task = if Some(v.pool) == self.farm_pool {
+                self.farm_task()
+            } else if let Some(s) = self.state.sources.iter().find(|s| s.pool == v.pool && s.remaining > EPS) {
+                s.task
+            } else {
+                continue;
+            };
+            let dist = self
+                .state
+                .sources
+                .iter()
+                .find(|s| s.pool == v.pool && s.remaining > EPS)
+                .map_or(0.0, |s| s.distance);
+            let r = aoe2_data::rates::effective_rate(
+                self.capacity(task).round() as u32,
+                self.rate(task),
+                dist / self.speed(),
+            );
+            *inc.get_mut(self.sc.rates.tasks[task].resource) += r;
+        }
+        inc
+    }
+
+    /// Termina y devuelve la línea de tiempo.
+    pub fn into_timeline(self) -> Timeline {
         self.finish()
     }
 
@@ -349,10 +498,14 @@ impl<'a> Sim<'a> {
 
     pub fn tick(&mut self) {
         self.run_steps();
+        self.run_auto();
         self.run_tc();
         self.run_research();
+        self.run_training();
         for vi in 0..self.state.villagers.len() {
-            self.act(vi);
+            if Some(self.state.villagers[vi].id) != self.decision {
+                self.act(vi);
+            }
         }
         self.run_construction();
         self.check_exhausted();
@@ -437,36 +590,233 @@ impl<'a> Sim<'a> {
                 }
                 StepAction::Build { building, builders, from, then, at } => {
                     let b = self.sc.rules.building_id(building).unwrap();
-                    if !self.building_available(b) || !self.state.res.can_afford(&self.building_cost(b)) {
-                        continue;
-                    }
                     let (from, then) = (self.pool(from), self.pool(then));
-                    let chosen: Vec<usize> = (0..self.state.villagers.len())
-                        .rev()
-                        .filter(|&vi| {
-                            let v = &self.state.villagers[vi];
-                            v.pool == from && !v.activity.is_building()
-                        })
-                        .take(builders as usize)
-                        .collect();
-                    if chosen.is_empty() {
-                        continue;
-                    }
-                    let cost = self.building_cost(b);
-                    self.state.res.pay(&cost);
                     let at = at.map(|p| self.pool(p));
-                    let site = self.new_site(b, None, at);
-                    let walk = self.sc.map.build_walk(building);
-                    let mut ids = Vec::new();
-                    for &vi in chosen.iter().rev() {
-                        self.state.villagers[vi].pool = then;
-                        self.send_to_site(vi, site, walk);
-                        ids.push(self.state.villagers[vi].id);
+                    if self.place_building(b, builders, from, Some(then), at, false) {
+                        self.steps[i] = StepState::Done;
                     }
-                    self.event(Event::BuildStarted { building: building.to_owned(), builders: ids });
+                }
+                StepAction::Train { unit, count } => {
+                    let u = self.sc.rules.unit_id(unit).unwrap();
+                    self.state.train_orders.push((u, count));
                     self.steps[i] = StepState::Done;
                 }
             }
+        }
+    }
+
+    /// Coloca un edificio con hasta `builders` aldeanos de `from` (los más
+    /// nuevos). Paga al colocarlo. Al terminar van a `then` (o vuelven a `from`).
+    /// Devuelve false si todavía no se puede (edad, recursos o constructores).
+    fn place_building(
+        &mut self,
+        b: u32,
+        builders: u32,
+        from: usize,
+        then: Option<usize>,
+        at: Option<usize>,
+        any_pool: bool,
+    ) -> bool {
+        if !self.building_available(b) || !self.state.res.can_afford(&self.building_cost(b)) {
+            return false;
+        }
+        let free = |v: &Villager| {
+            !v.activity.is_building() && !matches!(v.activity, Activity::Luring { .. }) && Some(v.id) != self.decision
+        };
+        let mut chosen: Vec<usize> = (0..self.state.villagers.len())
+            .rev()
+            .filter(|&vi| self.state.villagers[vi].pool == from && free(&self.state.villagers[vi]))
+            .take(builders as usize)
+            .collect();
+        if chosen.is_empty() && any_pool {
+            // Nadie en el pool de constructores: sirve cualquier aldeano libre.
+            chosen = (0..self.state.villagers.len())
+                .rev()
+                .filter(|&vi| free(&self.state.villagers[vi]))
+                .take(builders as usize)
+                .collect();
+        }
+        if chosen.is_empty() {
+            return false;
+        }
+        let cost = self.building_cost(b);
+        self.state.res.pay(&cost);
+        let site = self.new_site(b, None, at);
+        let name = self.building_name(b);
+        let walk = self.sc.map.build_walk(&name);
+        let mut ids = Vec::new();
+        for &vi in chosen.iter().rev() {
+            if let Some(then) = then {
+                self.state.villagers[vi].pool = then;
+            }
+            self.send_to_site(vi, site, walk);
+            ids.push(self.state.villagers[vi].id);
+        }
+        self.event(Event::BuildStarted { building: name, builders: ids });
+        true
+    }
+
+    /// Asigna un aldeano a un pool. Con `auto.drop_sites`, si la fuente del
+    /// pool aún no tiene punto de entrega, primero lo construye.
+    fn assign_pool(&mut self, vi: usize, pool: usize) {
+        self.state.villagers[vi].pool = pool;
+        self.state.villagers[vi].activity = Activity::Idle;
+        if !self.sc.order.auto.drop_sites {
+            return;
+        }
+        let Some(si) = self.state.sources.iter().position(|s| s.pool == pool && s.remaining > EPS) else {
+            return;
+        };
+        let s = &self.state.sources[si];
+        if let (Some(b), false, false) = (s.drop_site, s.has_drop_site, s.drop_site_planned) {
+            self.state.sources[si].drop_site_planned = true;
+            self.state.villagers[vi].activity = Activity::WaitBuild { building: b, at: Some(pool) };
+        }
+    }
+
+    /// Reglas automáticas de la orden (`[auto]`).
+    fn run_auto(&mut self) {
+        let auto = &self.sc.order.auto;
+        let from = self.builders_pool;
+        // Casas: empezar una cuando falten `margin` plazas o menos.
+        if let Some(margin) = auto.houses {
+            let p = &self.sc.rules.population;
+            let in_progress = self.state.sites.iter().filter(|s| s.building == ids::HOUSE && !s.done).count() as u32;
+            let room = self.pop_cap() + in_progress * p.per_house;
+            // +1: el aldeano que el CU tiene (o está por tener) en cola.
+            let pop = self.state.pop() + 1 + self.state.training.len() as u32;
+            let free = room.saturating_sub(pop);
+            if room < p.max && free <= margin {
+                // Con prisa (sin plazas libres), dos constructores.
+                let builders = if free == 0 { 2 } else { 1 };
+                self.place_building(ids::HOUSE, builders, from, None, None, true);
+            }
+        }
+        // Edificios que pide la siguiente edad.
+        if let Some(target) = auto.age_buildings {
+            let next = match self.state.age {
+                Age::Dark => Some(Age::Feudal),
+                Age::Feudal => Some(Age::Castle),
+                Age::Castle => Some(Age::Imperial),
+                Age::Imperial => None,
+            };
+            if let Some(next) = next.filter(|n| *n <= target) {
+                let tech = self.sc.rules.age_tech(next);
+                let wanted = self.state.age > Age::Dark || tech.is_some_and(|t| self.state.pending_research.contains(&t));
+                if let (true, Some(req)) = (wanted, tech.and_then(|t| self.sc.rules.age_requirement(t))) {
+                    let have = req.buildings.iter().filter(|b| self.state.count_planned(**b) > 0).count() as u32;
+                    if have < req.count {
+                        let mut options: Vec<u32> = req
+                            .buildings
+                            .iter()
+                            .copied()
+                            .filter(|b| self.state.count_planned(*b) == 0 && self.building_available(*b))
+                            .collect();
+                        let total = |b: &u32| {
+                            let c = self.building_cost(*b);
+                            c.food + c.wood + c.gold + c.stone
+                        };
+                        options.sort_by_key(total); // estable: en empate, el orden de rules.toml
+                        if let Some(&b) = options.first() {
+                            self.place_building(b, 2, from, None, None, true);
+                        }
+                    }
+                }
+            }
+        }
+        // Tecnologías automáticas: pedirlas en cuanto la edad lo permita.
+        for name in auto.research.clone() {
+            let tech = self.sc.rules.tech_id(&name).unwrap();
+            if self.state.has_tech(tech)
+                || self.state.pending_research.contains(&tech)
+                || self.state.research.iter().any(|r| r.job == Job::Research(tech))
+                || self.state.tc.is_some_and(|r| r.job == Job::Research(tech))
+            {
+                continue;
+            }
+            let age_ok = self.sc.data.tech(tech).and_then(|t| t.tree.as_ref()).is_none_or(|t| t.age <= self.state.age);
+            if age_ok {
+                let b = self.research_building(tech);
+                if b == ids::TOWN_CENTER || self.ensure_building(b) {
+                    self.state.pending_research.push(tech);
+                }
+            }
+        }
+        // Producción: mantener los edificios productores.
+        if let Some(prod) = auto.production.clone() {
+            let unit = self.sc.rules.unit_id(&prod.unit).unwrap();
+            if let Some(b) = self.sc.data.unit(unit).and_then(|u| u.tree.as_ref()).and_then(|t| t.produced_at) {
+                if self.building_available(b) && self.ensure_prerequisites(b) {
+                    if (self.state.count_planned(b) as u32) < prod.buildings {
+                        self.place_building(b, 2, from, None, None, true);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Edificios requeridos por `b` (p. ej. Cuartel para la Galería de tiro):
+    /// true si ya están terminados; si no, los encarga.
+    fn ensure_prerequisites(&mut self, b: u32) -> bool {
+        let req = self.sc.data.building(b).and_then(|x| x.tree.as_ref()).and_then(|t| t.requires_building);
+        match req {
+            Some(r) if self.state.count_built(r) == 0 => {
+                self.ensure_building(r);
+                false
+            }
+            _ => true,
+        }
+    }
+
+    /// Que exista un edificio de tipo `b`: true si ya está terminado; si no
+    /// está ni en obra, lo encarga (y sus requisitos).
+    fn ensure_building(&mut self, b: u32) -> bool {
+        if self.state.count_built(b) > 0 {
+            return true;
+        }
+        if self.state.count_planned(b) == 0 && self.building_available(b) && self.ensure_prerequisites(b) {
+            let from = self.builders_pool;
+            self.place_building(b, 2, from, None, None, true);
+        }
+        false
+    }
+
+    /// Entrenamiento: cada edificio productor terminado hace una unidad a la vez.
+    fn run_training(&mut self) {
+        for i in 0..self.state.train_orders.len() {
+            let (unit, left) = self.state.train_orders[i];
+            if left == 0 {
+                continue;
+            }
+            let Some(u) = self.sc.data.unit(unit) else { continue };
+            let Some(b) = u.tree.as_ref().and_then(|t| t.produced_at) else { continue };
+            if u.tree.as_ref().is_some_and(|t| t.age > self.state.age) {
+                continue;
+            }
+            let busy = self.state.training.iter().filter(|r| r.building == b).count();
+            let mut free = self.state.count_built(b).saturating_sub(busy);
+            let mut left = left;
+            let in_training = self.state.training.len() as u32;
+            let mut started = 0;
+            while free > 0 && left > 0 && self.state.res.can_afford(&u.cost) && self.state.pop() + in_training + started < self.pop_cap() {
+                self.state.res.pay(&u.cost);
+                self.state.training.push(Running { building: b, job: Job::Unit(unit), left: u.train_time });
+                free -= 1;
+                left -= 1;
+                started += 1;
+            }
+            self.state.train_orders[i].1 = left;
+        }
+        let mut finished = Vec::new();
+        for r in &mut self.state.training {
+            r.left -= 1;
+            if r.left == 0 {
+                finished.push(*r);
+            }
+        }
+        self.state.training.retain(|r| r.left > 0);
+        for r in finished {
+            self.finish_job(r);
         }
     }
 
@@ -545,10 +895,10 @@ impl<'a> Sim<'a> {
             }
         } else {
             let v = self.sc.data.unit(ids::VILLAGER).unwrap();
-            let enough = self.sc.order.max_villagers.is_some_and(|m| self.state.villagers.len() as u32 >= m);
+            let enough = self.max_villagers.is_some_and(|m| self.state.villagers.len() as u32 >= m);
             if enough {
                 Some(IdleCause::NoOrder)
-            } else if self.state.pop() >= self.pop_cap() {
+            } else if self.state.pop() + self.state.training.len() as u32 >= self.pop_cap() {
                 Some(IdleCause::Housed)
             } else if !self.state.res.can_afford(&v.cost) {
                 Some(IdleCause::NoFood)
@@ -633,12 +983,27 @@ impl<'a> Sim<'a> {
                         format!("{} → {}", a.build.as_deref().unwrap(), a.then.as_deref().unwrap())
                     }
                     Some(a) => {
-                        self.state.villagers[vi].pool = self.pool(a.pool.as_deref().unwrap());
+                        let p = self.pool(a.pool.as_deref().unwrap());
+                        self.assign_pool(vi, p);
                         a.pool.clone().unwrap()
                     }
-                    None => self.sc.order.default_pool.clone(),
+                    None if self.external => {
+                        self.decision = Some(id);
+                        "?".to_owned()
+                    }
+                    None => {
+                        let p = self.pool(&self.sc.order.default_pool);
+                        self.assign_pool(vi, p);
+                        self.sc.order.default_pool.clone()
+                    }
                 };
                 self.events.push(TimedEvent { time: now, event: Event::VillagerCreated { villager: id, assignment: label } });
+            }
+            Job::Unit(unit) => {
+                *self.state.units.entry(unit).or_default() += 1;
+                let count = self.state.units_of(unit);
+                let name = self.sc.rules.names.units.iter().find(|(_, v)| **v == unit).map_or(unit.to_string(), |(k, _)| k.clone());
+                self.events.push(TimedEvent { time: now, event: Event::UnitTrained { unit: name, count } });
             }
             Job::Research(tech) => {
                 self.state.techs.push(tech);
@@ -689,6 +1054,21 @@ impl<'a> Sim<'a> {
     /// Busca trabajo en el pool del aldeano. Devuelve la nueva actividad o
     /// `None` si no hay nada que hacer este segundo.
     fn find_work(&mut self, vi: usize) -> Option<Activity> {
+        for _ in 0..self.pools.len() {
+            let pool = self.state.villagers[vi].pool;
+            if let Some(a) = self.find_work_in(vi) {
+                return Some(a);
+            }
+            // Pool agotado: pasar al siguiente según `auto.fallback`.
+            match self.fallback.iter().find(|(a, _)| *a == pool) {
+                Some(&(_, next)) if self.pool_exhausted(pool) => self.state.villagers[vi].pool = next,
+                _ => return None,
+            }
+        }
+        None
+    }
+
+    fn find_work_in(&mut self, vi: usize) -> Option<Activity> {
         let pool = self.state.villagers[vi].pool;
         if Some(pool) == self.farm_pool {
             return self.find_farm(vi);

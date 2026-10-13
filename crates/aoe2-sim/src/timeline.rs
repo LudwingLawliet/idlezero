@@ -33,6 +33,9 @@ pub enum Event {
     PoolExhausted { pool: String },
     Lured { source: String, villager: u32 },
     TcIdle { cause: IdleCause, seconds: u32 },
+    UnitTrained { unit: String, count: u32 },
+    /// Momento en que el optimizador (u otra fuente externa) tomó una decisión.
+    Decision { villager: u32, choice: String },
     StepBlocked { step: usize, reason: String },
 }
 
