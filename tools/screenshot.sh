@@ -2,18 +2,22 @@
 # Captura la ventana de IdleZero en una pantalla virtual (Xvfb), sin tocar el
 # escritorio. Solo para desarrollo.
 #
-# Uso: tools/screenshot.sh [--wait SEG] [--no-build] [salida.png]
+# Uso: tools/screenshot.sh [--wait SEG] [--no-build] [--click X,Y]... [salida.png]
+#   --click X,Y  hace clic en esa posición antes de capturar (requiere xdotool);
+#                se puede repetir, en orden.
 # Requiere: xorg-x11-server-Xvfb e ImageMagick (import).
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 wait_s=5
 build=1
+clicks=()
 out=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --wait) wait_s="$2"; shift 2 ;;
     --no-build) build=0; shift ;;
+    --click) clicks+=("$2"); shift 2 ;;
     *) out="$1"; shift ;;
   esac
 done
@@ -43,6 +47,11 @@ sleep 1
 env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY="$display" "$bin" >/dev/null 2>&1 &
 pids+=($!)
 sleep "$wait_s"
+
+for c in "${clicks[@]}"; do
+  DISPLAY="$display" xdotool mousemove --sync "${c%,*}" "${c#*,}" click 1
+  sleep 1
+done
 
 import -display "$display" -window root "$out"
 echo "$out"

@@ -2,7 +2,13 @@
 
 App de escritorio gratuita (Linux y Windows) que calcula, aldeano por aldeano, la ruta más rápida para cumplir un objetivo en Age of Empires II: Definitive Edition, y la muestra como un mapa de decisiones.
 
-Estado: **Fases 0–2**: esqueleto de la app, datos del juego y simulador económico determinista (Oscura → Castillos). Especificación completa en [docs/SPEC.md](docs/SPEC.md).
+Estado: **v0.1.0, Fases 0–3** + primer árbol visual: datos del juego, simulador económico determinista y optimizador. Solo economía (sin combate).
+
+![Árbol de decisiones](docs/img/arbol.png)
+
+Eliges mapa y objetivo ("Edad Feudal lo antes posible", "Castillos", "20 arqueros"…) y la app calcula, aldeano por aldeano, la ruta más rápida sin dejar el Centro Urbano inactivo. La ruta óptima se ilumina; debajo de cada decisión, lo que costaría cambiarla ("+25 s"); arriba, otros caminos completos para comparar. La pestaña **Lista** da la orden por tick, lista para copiar.
+
+En Arabia neutra (valores aproximados): Feudal 9:15, Castillos 15:15, ambos con 0 s de CU inactivo. Especificación completa en [docs/SPEC.md](docs/SPEC.md).
 
 ## Descargas
 
@@ -29,7 +35,12 @@ cd app && npm install && npm run tauri dev
 
 # Simular una orden de construcción, tick a tick
 cargo run -p aoe2-sim --example run -- arabia_neutra fast_castle_27_2
+
+# Optimizar un objetivo (data/goals.toml) desde la terminal
+cargo run -p aoe2-opt --example optimize -- arabia_neutra castle
 ```
+
+Idiomas: español por defecto e inglés (`data/i18n/`); añadir un idioma es copiar `en.toml` y traducirlo.
 
 Las órdenes de construcción son archivos TOML en `data/build_orders/`; las reglas, mejoras económicas y mapas también viven en `data/`.
 

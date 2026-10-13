@@ -57,6 +57,7 @@ struct RawTree {
 
 #[derive(Deserialize)]
 struct RawNode {
+    picture_index: u32,
     age_id: u32,
     building_id: u32,
     link_id: Option<u32>,
@@ -81,6 +82,7 @@ struct NodeVotes {
     produced_at: BTreeMap<u32, u32>,
     requires: BTreeMap<Option<u32>, u32>,
     name_string_id: Option<u32>,
+    picture_index: Option<u32>,
     civs: u32,
 }
 
@@ -102,7 +104,8 @@ fn main() -> Res<()> {
         .map(PathBuf::from)
         .unwrap_or_else(|| root.join("data/game_data.json"));
 
-    let data = import(&vendor)?;
+    let (data, votes) = import(&vendor)?;
+    copy_icons(&vendor, &root, &votes)?;
     let mut json = serde_json::to_string_pretty(&data)?;
     json.push('\n');
     std::fs::write(&out, json)?;
@@ -121,7 +124,7 @@ fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Res<T> {
     Ok(serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?)
 }
 
-fn import(vendor: &Path) -> Res<GameData> {
+fn import(vendor: &Path) -> Res<(GameData, HashMap<(Kind, u32), NodeVotes>)> {
     let raw: RawData = read_json(&vendor.join("data/data.json"))?;
     let en: HashMap<String, String> = read_json(&vendor.join("data/locales/en/strings.json"))?;
     let es: HashMap<String, String> = read_json(&vendor.join("data/locales/es/strings.json"))?;
@@ -204,13 +207,71 @@ fn import(vendor: &Path) -> Res<GameData> {
         );
     }
 
-    Ok(GameData {
+    let data = GameData {
         schema_version: SCHEMA_VERSION,
         source: SourceInfo { repository: REPOSITORY.to_owned(), commit: git_commit(vendor) },
         units,
         buildings,
         techs,
-    })
+    };
+    Ok((data, votes))
+}
+
+#[derive(Deserialize)]
+struct RulesNames {
+    names: NamesTables,
+}
+
+#[derive(Deserialize)]
+struct NamesTables {
+    buildings: BTreeMap<String, u32>,
+    techs: BTreeMap<String, u32>,
+    units: BTreeMap<String, u32>,
+}
+
+/// Copia a app/public/img los íconos que usa la app, con su nombre corto de
+/// data/rules.toml (`building/house.png`, `tech/feudal_age.png`…), más los de
+/// recursos y edades. Solo íconos ya publicados por aoe2techtree (reglas de
+/// contenido de Microsoft: nada extraído de los archivos del juego).
+fn copy_icons(vendor: &Path, root: &Path, votes: &HashMap<(Kind, u32), NodeVotes>) -> Res<()> {
+    let rules: RulesNames = toml::from_str(&std::fs::read_to_string(root.join("data/rules.toml"))?)?;
+    let img = vendor.join("img");
+    let out = root.join("app/public/img");
+    let mut copied = 0;
+    let groups = [
+        (Kind::Building, "Building", "building", &rules.names.buildings),
+        (Kind::Tech, "Tech", "tech", &rules.names.techs),
+        (Kind::Unit, "Unit", "unit", &rules.names.units),
+    ];
+    for (kind, src_dir, dst_dir, names) in groups {
+        std::fs::create_dir_all(out.join(dst_dir))?;
+        for (name, id) in names {
+            let Some(pic) = votes.get(&(kind, *id)).and_then(|v| v.picture_index) else {
+                eprintln!("sin ícono: {dst_dir}/{name}");
+                continue;
+            };
+            std::fs::copy(img.join(src_dir).join(format!("{pic}.png")), out.join(dst_dir).join(format!("{name}.png")))?;
+            copied += 1;
+        }
+    }
+    std::fs::create_dir_all(out.join("resource"))?;
+    for r in ["food", "wood", "gold", "stone"] {
+        std::fs::copy(img.join(format!("{r}.png")), out.join("resource").join(format!("{r}.png")))?;
+        copied += 1;
+    }
+    std::fs::create_dir_all(out.join("age"))?;
+    for (age, file) in [("Dark", "dark"), ("Feudal", "feudal"), ("Castle", "castle"), ("Imperial", "imperial")] {
+        std::fs::copy(img.join("Ages").join(format!("base_{file}_age.png")), out.join("age").join(format!("{age}.png")))?;
+        copied += 1;
+    }
+    std::fs::write(
+        out.join("CREDITS.txt"),
+        "Game Icons © Hidden Path Entertainment, Forgotten Empires, SkyBox Labs, Ensemble Studios.\n\
+         Copiados de https://github.com/SiegeEngineers/aoe2techtree (img/), publicados bajo las\n\
+         Game Content Usage Rules de Microsoft: https://www.xbox.com/en-US/developers/rules\n",
+    )?;
+    eprintln!("{copied} íconos -> {}", out.display());
+    Ok(())
 }
 
 /// Los textos del árbol traen saltos de línea HTML ("Lumber<br>\nCamp").
@@ -263,6 +324,7 @@ fn collect_tree_votes(dir: &Path) -> Res<HashMap<(Kind, u32), NodeVotes>> {
                 .filter(|_| node.link_node_type.as_deref() == Some("BuildingTech"));
             *v.requires.entry(requires).or_default() += 1;
             v.name_string_id.get_or_insert(node.name_string_id);
+            v.picture_index.get_or_insert(node.picture_index);
         }
     }
     Ok(votes)

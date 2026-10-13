@@ -112,6 +112,8 @@ pub struct Optimizer<'a> {
 
 struct Run<'s> {
     time: Option<u32>,
+    /// Segundo en que empezó cada investigación de edad.
+    clicks: std::collections::BTreeMap<Age, u32>,
     decisions: Vec<Decision>,
     /// Simulador justo antes de cada decisión.
     checkpoints: Vec<Sim<'s>>,
@@ -500,7 +502,8 @@ impl<'a> Optimizer<'a> {
             i += 1;
         }
         let time = (done(&sim.state) && self.tc_ok(&sim)).then_some(sim.state.time);
-        Run { time, decisions, checkpoints }
+        let clicks = sim.summary().age_clicks.clone();
+        Run { time, clicks, decisions, checkpoints }
     }
 
     /// Tiempo de `choices`, reutilizando el punto de control anterior a la
@@ -805,6 +808,39 @@ impl<'a> Optimizer<'a> {
         best
     }
 
+    /// Un clic suave da igual en cualquier decisión anterior a la subida real.
+    /// Para que la ruta se lea bien, se mueve a la última decisión antes de
+    /// que empiece la investigación (si el resultado no cambia).
+    fn normalize_clicks(&self, mut best: Plan) -> Plan {
+        for _ in 0..3 {
+            let run = self.simulate_choices(&best.choices, None, true);
+            let mut changed = false;
+            for i in 0..best.choices.len() {
+                let Some(tech) = best.choices[i].click.clone() else { continue };
+                if best.choices[i].hard {
+                    continue;
+                }
+                let Some(age) = self.sc.rules.tech_id(&tech).and_then(|t| self.sc.rules.age_of_tech(t)) else { continue };
+                let Some(&started) = run.clicks.get(&age) else { continue };
+                let Some(j) = run.decisions.iter().rposition(|d| d.time <= started) else { continue };
+                if j <= i || best.choices[j].click.is_some() {
+                    continue;
+                }
+                let mut c = best.choices.clone();
+                c[j].click = c[i].click.take();
+                if self.simulate_choices(&c, None, false).time == best.time {
+                    best.choices = c;
+                    changed = true;
+                    break;
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+        best
+    }
+
     /// Pools que tiene sentido proponer (existen en el mapa y el objetivo
     /// necesita su recurso; las granjas siempre).
     fn pool_relevant(&self, pool: &str) -> bool {
@@ -835,8 +871,8 @@ impl<'a> Optimizer<'a> {
                     eval(c, alt);
                 }
             }
-            // Clic: adelantarlo a esta decisión.
-            if let Some(j) = best.choices.iter().position(|c| c.click.is_some()).filter(|j| *j > i) {
+            // Clic duro: adelantarlo a esta decisión (uno suave da igual dónde se pida).
+            if let Some(j) = best.choices.iter().position(|c| c.click.is_some() && c.hard).filter(|j| *j > i) {
                 let mut c = best.choices.clone();
                 let click = c[j].click.take();
                 c[i].click = click;
@@ -870,7 +906,7 @@ impl<'a> Optimizer<'a> {
         let key = |pl: &Plan| pl.time.unwrap_or(u32::MAX);
         finished.sort_by(|a, b| key(a).cmp(&key(b)).then_with(|| a.choices.cmp(&b.choices)));
         let first = finished.first().cloned().unwrap_or(Plan { time: None, choices: Vec::new() });
-        let best = self.refine(first);
+        let best = self.normalize_clicks(self.refine(first));
         lap("refinamiento");
         let run = self.simulate_choices(&best.choices, None, true);
         let best = Plan { time: run.time, ..best };
@@ -878,15 +914,31 @@ impl<'a> Optimizer<'a> {
         drop(run);
         lap("árbol");
 
-        let mut plans = vec![best.clone()];
-        for p in finished {
-            if plans.len() >= self.cfg.plans {
-                break;
+        // Caminos distintos de verdad: otro reparto de aldeanos o clic en otro momento.
+        let shape = |p: &Plan| {
+            let mut counts: std::collections::BTreeMap<&str, u32> = Default::default();
+            for c in &p.choices {
+                *counts.entry(c.pool.as_str()).or_default() += 1;
             }
-            if p.time.is_some() && !plans.iter().any(|q| q.choices == p.choices) {
-                plans.push(p);
+            let clicks: Vec<usize> = p.choices.iter().enumerate().filter(|(_, c)| c.click.is_some()).map(|(i, _)| i).collect();
+            format!("{counts:?}{clicks:?}{}", p.choices.len())
+        };
+        let mut plans = vec![best.clone()];
+        let mut shapes = BTreeSet::from([shape(&best)]);
+        // Primero hasta 2 con el mismo tiempo que el mejor, luego otros tiempos.
+        let same_time = |p: &Plan| p.time == best.time;
+        for pass in 0..2 {
+            for p in &finished {
+                let quota = if pass == 0 { 3 } else { self.cfg.plans };
+                if plans.len() >= quota.min(self.cfg.plans) {
+                    break;
+                }
+                if p.time.is_some() && (pass == 1 || same_time(p)) && (pass == 0 || !same_time(p)) && shapes.insert(shape(p)) {
+                    plans.push(p.clone());
+                }
             }
         }
+        plans[1..].sort_by_key(|p| p.time.unwrap_or(u32::MAX));
 
         let order = self.to_order(&best);
         let order_toml = toml::to_string(&order).unwrap_or_default();

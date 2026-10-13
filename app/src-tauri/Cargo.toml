@@ -21,3 +21,6 @@ tauri-plugin-opener = "2"
 serde.workspace = true
 serde_json.workspace = true
 aoe2-data.workspace = true
+aoe2-sim = { path = "../../crates/aoe2-sim" }
+aoe2-opt = { path = "../../crates/aoe2-opt" }
+toml.workspace = true
