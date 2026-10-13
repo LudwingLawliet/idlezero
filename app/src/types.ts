@@ -84,6 +84,7 @@ export interface OptResult {
   tree: TreeNode[];
   plans: Plan[];
   simulations: number;
+  relaxed: boolean;
 }
 
 export interface TextEvent {

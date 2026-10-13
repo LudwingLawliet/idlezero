@@ -73,6 +73,7 @@ export default function SidePanel({
       <section>
         <h3>{labels.ui.summary}</h3>
         <div className="goal-name">{goalName}</div>
+        {r.relaxed && <p className="notice">{labels.ui.relaxed}</p>}
         <div className="total">
           <span className="muted">{labels.ui.totalTime}</span>
           <strong>{best !== null ? clock(best) : "—"}</strong>

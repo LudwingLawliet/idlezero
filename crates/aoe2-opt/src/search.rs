@@ -94,6 +94,9 @@ pub struct OptResult {
     pub plans: Vec<Plan>,
     /// Simulaciones hechas (parciales en el haz, completas en el resto).
     pub simulations: usize,
+    /// No hubo forma de cumplir el objetivo sin dejar el CU inactivo: el plan
+    /// es el más rápido admitiendo esperas (ver timeline.summary.tc_idle_seconds).
+    pub relaxed: bool,
 }
 
 pub struct Optimizer<'a> {
@@ -107,6 +110,8 @@ pub struct Optimizer<'a> {
     target: Age,
     /// El objetivo necesita piedra (si no, no se propone minar piedra).
     needs_stone: bool,
+    /// Sin plan con el CU siempre activo: se acepta cualquier CU inactivo.
+    relaxed: bool,
     simulations: std::sync::atomic::AtomicUsize,
 }
 
@@ -237,7 +242,13 @@ impl<'a> Optimizer<'a> {
             per_villager[i] = per_villager[i].max(r);
         }
         let needs_stone = goal.remaining_cost(&sc, &Sim::new(&sc)?.state).stone > 0;
-        Ok(Optimizer { sc, per_villager, goal, cfg, pools, target, needs_stone, simulations: Default::default() })
+        Ok(Optimizer { sc, per_villager, goal, cfg, pools, target, needs_stone, relaxed: false, simulations: Default::default() })
+    }
+
+    /// Acepta planes con el CU inactivo (si con la regla estricta no hay ninguno).
+    pub fn relax(mut self) -> Self {
+        self.relaxed = true;
+        self
     }
 
     pub fn scenario(&self) -> &Scenario {
@@ -449,6 +460,9 @@ impl<'a> Optimizer<'a> {
     /// para investigar una edad solo si el objetivo lo permite.
     fn tc_ok(&self, sim: &Sim) -> bool {
         use aoe2_sim::IdleCause::*;
+        if self.relaxed {
+            return true;
+        }
         sim.summary().tc_idle_seconds.iter().all(|(cause, secs)| match cause {
             NoOrder => true,
             WaitingResearch => self.goal.allow_tc_idle || *secs == 0,
@@ -812,6 +826,9 @@ impl<'a> Optimizer<'a> {
     /// Para que la ruta se lea bien, se mueve a la última decisión antes de
     /// que empiece la investigación (si el resultado no cambia).
     fn normalize_clicks(&self, mut best: Plan) -> Plan {
+        // La simulación completa decisiones que falten repitiendo la última:
+        // dejar el plan con la lista completa para que los índices coincidan.
+        best.choices = self.simulate_choices(&best.choices, None, true).decisions.into_iter().map(|d| d.choice).collect();
         for _ in 0..3 {
             let run = self.simulate_choices(&best.choices, None, true);
             let mut changed = false;
@@ -823,7 +840,7 @@ impl<'a> Optimizer<'a> {
                 let Some(age) = self.sc.rules.tech_id(&tech).and_then(|t| self.sc.rules.age_of_tech(t)) else { continue };
                 let Some(&started) = run.clicks.get(&age) else { continue };
                 let Some(j) = run.decisions.iter().rposition(|d| d.time <= started) else { continue };
-                if j <= i || best.choices[j].click.is_some() {
+                if j <= i || j >= best.choices.len() || best.choices[j].click.is_some() {
                     continue;
                 }
                 let mut c = best.choices.clone();
@@ -959,6 +976,7 @@ impl<'a> Optimizer<'a> {
             tree,
             plans,
             simulations: self.simulations.load(std::sync::atomic::Ordering::Relaxed),
+            relaxed: self.relaxed,
         }
     }
 

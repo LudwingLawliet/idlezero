@@ -15,6 +15,12 @@ pub use search::{Choice, OptConfig, OptResult, Optimizer, Plan, TreeNode};
 
 use aoe2_sim::Scenario;
 
+/// Optimiza con la regla del CU siempre activo; si no hay ningún plan así,
+/// repite admitiendo CU inactivo y lo marca en `OptResult::relaxed`.
 pub fn optimize(base: &Scenario, goal: &Goal, cfg: OptConfig) -> Result<OptResult, String> {
-    Ok(Optimizer::new(base, goal, cfg)?.run())
+    let strict = Optimizer::new(base, goal, cfg.clone())?.run();
+    if strict.best.time.is_some() {
+        return Ok(strict);
+    }
+    Ok(Optimizer::new(base, goal, cfg)?.relax().run())
 }

@@ -42,6 +42,7 @@ const es = {
   legend: "Ruta óptima iluminada · ramas: costo de cambiar una decisión",
   tick: "Tick",
   approx: "Valores de tasas y mapa aproximados.",
+  relaxed: "En este mapa no se puede evitar que el CU pare: es el plan más rápido admitiendo esperas.",
 };
 
 const en: typeof es = {
@@ -85,6 +86,7 @@ const en: typeof es = {
   legend: "Optimal route highlighted · branches: cost of changing one decision",
   tick: "Tick",
   approx: "Gather rates and map values are approximate.",
+  relaxed: "On this map the TC cannot avoid idling: this is the fastest plan allowing waits.",
 };
 
 export type UiText = typeof es;

@@ -56,6 +56,9 @@ fn main() {
         Some(t) => println!("tiempo: {}  ({} simulaciones, {:.1} s)", clock(t), r.simulations, elapsed.as_secs_f64()),
         None => println!("no se cumple en el tiempo máximo"),
     }
+    if r.relaxed {
+        println!("aviso: imposible sin CU inactivo; CU inactivo {:?}", r.timeline.summary.tc_idle_seconds);
+    }
     println!();
     for node in &r.tree {
         let d = &node.decision;
