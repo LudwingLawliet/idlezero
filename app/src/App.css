@@ -1688,11 +1688,11 @@ kbd {
 }
 
 .picker-card h5.good {
-  color: var(--ok, #2f9e44);
+  color: var(--good);
 }
 
 .picker-card h5.bad {
-  color: var(--bad, #e34948);
+  color: var(--bad);
 }
 
 .card-title {
@@ -1887,4 +1887,162 @@ kbd {
 
 .add-btn.active {
   border-color: var(--accent);
+}
+
+/* Gráfica del objetivo */
+.goal-timeline .grid {
+  stroke: var(--grid);
+}
+
+.goal-timeline .axis {
+  fill: var(--muted);
+  font-size: 11px;
+}
+
+.goal-timeline .row {
+  fill: transparent;
+}
+
+.goal-timeline .row-alt {
+  fill: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.goal-timeline .row-name {
+  fill: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.goal-timeline .row-sub {
+  fill: var(--muted);
+  font-size: 12px;
+}
+
+.goal-timeline .mark line {
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+
+.goal-timeline .mark text {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.goal-timeline .mark.start line {
+  stroke: var(--accent);
+}
+
+.goal-timeline .mark.start text {
+  fill: var(--accent);
+}
+
+.goal-timeline .mark.done line {
+  stroke: var(--good);
+}
+
+.goal-timeline .mark.done text {
+  fill: var(--good);
+}
+
+.goal-timeline .badge {
+  cursor: pointer;
+}
+
+.goal-timeline .badge-bg {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.goal-timeline .badge:hover .badge-bg,
+.goal-timeline .badge.active .badge-bg {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.goal-timeline .badge-n {
+  fill: var(--accent);
+}
+
+.goal-timeline .badge-t {
+  fill: #1b1b1b;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.goal-timeline .build-bar {
+  stroke: var(--good);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+
+.goal-timeline .build-end {
+  fill: var(--good);
+}
+
+.goal-detail {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 52px;
+  padding: 8px 10px;
+  margin-top: 6px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 13px;
+}
+
+.goal-detail .res-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 3px;
+}
+
+.goal-detail .res-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.6;
+}
+
+.goal-detail .res-row span.used {
+  opacity: 1;
+  font-weight: 600;
+}
+
+.goal-pins .pin-bg {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.goal-pins .pin-n {
+  fill: var(--accent);
+}
+
+.goal-pins .pin-t {
+  fill: #1b1b1b;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.goal-pins .goal-start line {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+}
+
+.goal-pins .goal-start text {
+  fill: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.goal-pins .halo {
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
 }

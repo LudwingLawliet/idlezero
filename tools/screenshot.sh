@@ -5,6 +5,9 @@
 # Uso: tools/screenshot.sh [--wait SEG] [--no-build] [--click X,Y]... [salida.png]
 #   --click X,Y  hace clic en esa posición antes de capturar (requiere xdotool);
 #                se puede repetir, en orden.
+#   --key K      pulsa una tecla (sintaxis de xdotool, p. ej. Down, Return),
+#                en orden junto con los clics.
+#   --sleep SEG  pausa entre acciones (p. ej. esperar un cálculo).
 #   --after SEG  espera tras los clics antes de capturar (por defecto 1).
 #   --scroll X,Y,N  gira la rueda N pasos hacia abajo en X,Y (tras los clics).
 # Requiere: xorg-x11-server-Xvfb e ImageMagick (import).
@@ -21,7 +24,9 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --wait) wait_s="$2"; shift 2 ;;
     --no-build) build=0; shift ;;
-    --click) clicks+=("$2"); shift 2 ;;
+    --click) clicks+=("c:$2"); shift 2 ;;
+    --key) clicks+=("k:$2"); shift 2 ;;
+    --sleep) clicks+=("s:$2"); shift 2 ;;
     --after) after="$2"; shift 2 ;;
     --scroll) scrolls+=("$2"); shift 2 ;;
     *) out="$1"; shift ;;
@@ -60,8 +65,15 @@ env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY="$display" XDG_DATA_HOME="$profil
 pids+=($!)
 sleep "$wait_s"
 
-for c in "${clicks[@]}"; do
-  DISPLAY="$display" xdotool mousemove --sync "${c%,*}" "${c#*,}" click 1
+for a in "${clicks[@]}"; do
+  if [ "${a%%:*}" = s ]; then
+    sleep "${a#s:}"
+  elif [ "${a%%:*}" = k ]; then
+    DISPLAY="$display" xdotool key "${a#k:}"
+  else
+    c="${a#c:}"
+    DISPLAY="$display" xdotool mousemove --sync "${c%,*}" "${c#*,}" click 1
+  fi
   sleep 1
 done
 for sc in "${scrolls[@]}"; do

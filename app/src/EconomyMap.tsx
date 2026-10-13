@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { MapLayout, PX_PER_SECOND, Segment, TC_W, TC_X } from "./layout";
 import { Labels } from "./labels";
 import { RESOURCES, Resource, Timeline, TreeNode, clock } from "./types";
+import { GoalRow, goalStart } from "./goalProgress";
 
 export type Selection = { kind: "villager"; id: number } | { kind: "building"; placement: number } | null;
 
@@ -26,6 +27,8 @@ interface Props {
   goalTime: number | null;
   /** Escudo de la civilización (para las bandas de edad). */
   civIcon?: string;
+  /** Unidades, edificios y tecnologías del objetivo, con su segundo de pago. */
+  goalRows?: GoalRow[];
 }
 
 type View = { x: number; y: number; k: number };
@@ -55,11 +58,12 @@ interface ContentProps {
   selNode: TreeNode | undefined;
   goalTime: number | null;
   civIcon?: string;
+  goalRows?: GoalRow[];
   onSelect: (s: Selection) => void;
   dragMoved: () => boolean;
 }
 
-const Content = memo(function Content({ layout, timeline, labels, selV, selB, selNode, goalTime, civIcon, onSelect, dragMoved }: ContentProps) {
+const Content = memo(function Content({ layout, timeline, labels, selV, selB, selNode, goalTime, civIcon, goalRows, onSelect, dragMoved }: ContentProps) {
   const L = labels.ui;
   const { y } = layout;
   const stripsX = layout.right + 10;
@@ -296,6 +300,41 @@ const Content = memo(function Content({ layout, timeline, labels, selV, selB, se
         );
       })}
 
+      {/* Objetivo: insignia numerada en el segundo en que se pagó cada cosa, junto al CU */}
+      {goalRows && goalRows.length > 0 && (() => {
+        const gs = goalStart(goalRows);
+        const gx = TC_X + TC_W + 16;
+        return (
+          <g className="goal-pins">
+            {gs !== null && (
+              <g className="goal-start">
+                <line x1={TC_X - 10} x2={gx + 40} y1={y(gs)} y2={y(gs)} />
+                <text x={gx + 16} y={y(gs) + 14} className="halo">
+                  {L.goalStarts} · {clock(gs)}
+                </text>
+              </g>
+            )}
+            {goalRows
+              .filter((r) => r.kind !== "age")
+              .flatMap((r) =>
+                r.items
+                  .filter((i) => i.paid !== null)
+                  .map((i) => (
+                    <g key={`${r.key}-${i.n}`} transform={`translate(${gx},${y(i.paid!)})`}>
+                      <title>{`${i.name ?? r.name} #${i.n} · ${L.paidAt} ${clock(i.paid!)}${i.done !== null ? ` · ${L.readyAt} ${clock(i.done)}` : ""}`}</title>
+                      <circle r={11} className="pin-bg" />
+                      <image href={i.icon ?? r.icon} x={-8} y={-8} width={16} height={16} />
+                      <circle cx={9} cy={-8} r={6} className="pin-n" />
+                      <text x={9} y={-5.5} textAnchor="middle" className="pin-t">
+                        {i.n}
+                      </text>
+                    </g>
+                  )),
+              )}
+          </g>
+        );
+      })()}
+
       {/* Meta (arriba) e inicio (abajo) */}
       <g className="goal-banner">
         <text x={TC_X + TC_W / 2} y={-8} textAnchor="middle">
@@ -352,7 +391,7 @@ const Cursor = memo(function Cursor({ t, layout, timeline }: { t: number; layout
 
 // ---------- contenedor: zoom, paneo y teclado ----------
 
-export default function EconomyMap({ layout, timeline, tree, labels, selected, onSelect, cursor, onCursor, goalTime, civIcon }: Props) {
+export default function EconomyMap({ layout, timeline, tree, labels, selected, onSelect, cursor, onCursor, goalTime, civIcon, goalRows }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const layer = useRef<SVGGElement>(null);
   const view = useRef<View>({ x: 0, y: 0, k: 1 });
@@ -511,6 +550,7 @@ export default function EconomyMap({ layout, timeline, tree, labels, selected, o
             selNode={selNode}
             goalTime={goalTime}
             civIcon={civIcon}
+            goalRows={goalRows}
             onSelect={onSelect}
             dragMoved={dragMoved}
           />

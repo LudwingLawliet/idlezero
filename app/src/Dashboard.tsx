@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { Labels } from "./labels";
+import GoalTimeline from "./GoalTimeline";
+import { goalProgress } from "./goalProgress";
 import { MapLayout } from "./layout";
 import { AppInfo, OptResult, RESOURCES, Resource, Timeline, Tip, clock } from "./types";
 
@@ -82,6 +84,7 @@ export default function Dashboard({ result, timeline, layout, labels, info, goal
   const [hover, setHover] = useState<number | null>(null);
 
   const stack = useMemo(() => villagersByResource(layout, labels), [layout, labels]);
+  const goalRows = useMemo(() => goalProgress(result.goal, timeline, info, labels), [result.goal, timeline, info, labels]);
   const maxV = Math.max(1, ...stack.map((p) => LAYERS.reduce((a, k) => a + p.v[k], 0)));
   const yv = (n: number) => PAD.t + (1 - n / maxV) * (H - PAD.t - PAD.b);
   const areas = useMemo(() => {
@@ -182,6 +185,14 @@ export default function Dashboard({ result, timeline, layout, labels, info, goal
           />
         )}
       </div>
+
+      {goalRows.some((r) => r.kind !== "age") && (
+        <section className="chart-card">
+          <h3>{L.goalChart}</h3>
+          <p className="muted tiny">{L.goalChartNote}</p>
+          <GoalTimeline rows={goalRows} end={end} goalTime={goalTime} labels={labels} />
+        </section>
+      )}
 
       <section className="chart-card">
         <h3>{L.chartVillagers}</h3>

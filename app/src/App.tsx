@@ -11,6 +11,7 @@ import GoalBuilder, { emptyGoal } from "./GoalBuilder";
 import Shortcuts from "./Shortcuts";
 import CivPicker from "./CivPicker";
 import Dashboard from "./Dashboard";
+import { goalProgress } from "./goalProgress";
 import "./App.css";
 
 const RULES_URL = "https://www.xbox.com/en-US/developers/rules";
@@ -129,6 +130,10 @@ export default function App() {
   const events = planView?.events ?? view?.events ?? [];
   const goalTime = planView ? planView.time : view?.result.best.time ?? null;
   const layout = useMemo(() => (timeline ? layoutMap(timeline, mapInfo) : null), [timeline, mapInfo]);
+  const goalRows = useMemo(
+    () => (view && timeline && info && labels ? goalProgress(view.result.goal, timeline, info, labels) : undefined),
+    [view, timeline, info, labels],
+  );
 
   if (!info || !labels) {
     return <div className="loading">{error ?? "IdleZero…"}</div>;
@@ -223,6 +228,7 @@ export default function App() {
                 onCursor={setCursor}
                 goalTime={goalTime}
                 civIcon={civInfo?.icon}
+                goalRows={goalRows}
               />
             )}
             {tab === "dash" && view && timeline && layout && (
