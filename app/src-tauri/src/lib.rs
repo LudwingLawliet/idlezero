@@ -121,12 +121,11 @@ fn app_info(lang: String) -> AppInfo {
             age: u.tree.as_ref().unwrap().age,
         })
         .collect();
-    let upgrade_techs: Vec<u32> = b.data.unit_upgrades.values().copied().collect();
     let techs = b
         .data
         .techs
         .values()
-        .filter(|t| common(t.tree.as_ref()) && !upgrade_techs.contains(&t.id) && b.rules.age_of_tech(t.id).is_none())
+        .filter(|t| common(t.tree.as_ref()) && b.rules.age_of_tech(t.id).is_none())
         .map(|t| Entity {
             key: key_of(&b.rules.names.techs, t.id),
             id: t.id,
@@ -310,5 +309,28 @@ mod tests {
         let secs: Vec<u32> = r.iter().map(|w| w.build_seconds.unwrap()).collect();
         assert!(secs.windows(2).all(|w| w[1] <= w[0]), "{secs:?}");
         assert!(secs[0] > secs[4]);
+    }
+}
+
+#[cfg(test)]
+mod custom_goal {
+    #[test]
+    fn free_goal_by_id_with_unit_upgrade() {
+        // 10 ballesteros (id 24): no está en las plantillas y exige investigar "Crossbow".
+        let goal: aoe2_opt::Goal =
+            serde_json::from_str(r#"{"id":"custom","units":[{"unit":"24","count":10}],"techs":[],"buildings":[],"allow_tc_idle":false}"#).unwrap();
+        let v = tauri::async_runtime::block_on(super::optimize("arabia_neutra".into(), goal, "es".into())).unwrap();
+        assert!(v.result.best.time.is_some(), "sin plan para 10 ballesteros");
+        let tl = &v.result.timeline;
+        let trained = tl.events.iter().filter(|e| matches!(e.event, aoe2_sim::Event::UnitTrained { .. })).count();
+        assert_eq!(trained, 10);
+        let upgrade_done = tl.events.iter().find_map(|e| match &e.event {
+            aoe2_sim::Event::ResearchFinished { tech } if tech == "100" => Some(e.time),
+            _ => None,
+        });
+        let first_unit = tl.events.iter().find_map(|e| matches!(e.event, aoe2_sim::Event::UnitTrained { .. }).then_some(e.time));
+        assert!(upgrade_done.is_some(), "falta la mejora Ballestero");
+        assert!(first_unit.unwrap() > upgrade_done.unwrap());
+        println!("10 ballesteros: {:?}", v.result.best.time);
     }
 }

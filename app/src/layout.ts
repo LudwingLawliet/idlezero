@@ -6,7 +6,7 @@ import { Age, MapInfo, Task, Timeline } from "./types";
 
 export const PX_PER_SECOND = 1.6;
 const SLOT = 8; // separación entre ramas dentro de una columna
-const COL_GAP = 34;
+const COL_GAP = 52;
 const BUILD_W = 128; // ancho de un edificio en la zona izquierda
 const BUILD_GAP = 10;
 export const TC_X = 0;

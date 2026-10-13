@@ -19,11 +19,11 @@ pub fn idle_cause(l: &Locale, c: IdleCause) -> String {
 
 /// Nombre traducido de un edificio por su nombre corto de rules.toml.
 pub fn building(sc: &Scenario, l: &Locale, name: &str) -> String {
-    sc.rules.building_id(name).map(|id| l.building(&sc.data, id)).unwrap_or_else(|| name.to_owned())
+    sc.building_ref(name).map(|id| l.building(&sc.data, id)).unwrap_or_else(|| name.to_owned())
 }
 
 pub fn tech(sc: &Scenario, l: &Locale, name: &str) -> String {
-    sc.rules.tech_id(name).map(|id| l.tech(&sc.data, id)).unwrap_or_else(|| name.to_owned())
+    sc.tech_ref(name).map(|id| l.tech(&sc.data, id)).unwrap_or_else(|| name.to_owned())
 }
 
 /// Etiqueta de un pool o de "construir X → pool" (formato de VillagerCreated).

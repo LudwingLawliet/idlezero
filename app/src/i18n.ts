@@ -65,6 +65,7 @@ const es = {
   duration: "Obra",
   whatIf: "¿Y con otro número de constructores?",
   builders: "constructores",
+  builder: "constructor",
   goalAt: "objetivo",
   nothingSelected: "Haz clic en una rama (aldeano) o en un edificio para ver su detalle y sus alternativas.",
   copy: "Copiar como texto",
@@ -99,6 +100,7 @@ const es = {
   perSecond: "/s",
   seconds: "s",
   tc: "CU",
+  tcStopped: "CU parado",
   max: "máx",
   zoomHint: "Rueda: tiempo · Mayús+rueda: lados · Ctrl+rueda: zoom · arrastrar: mover",
 };
@@ -167,6 +169,7 @@ const en: typeof es = {
   duration: "Build time",
   whatIf: "With a different number of builders?",
   builders: "builders",
+  builder: "builder",
   goalAt: "goal",
   nothingSelected: "Click a branch (villager) or a building to see its details and alternatives.",
   copy: "Copy as text",
@@ -200,6 +203,7 @@ const en: typeof es = {
   perSecond: "/s",
   seconds: "s",
   tc: "TC",
+  tcStopped: "TC idle",
   max: "max",
   zoomHint: "Wheel: time · Shift+wheel: sides · Ctrl+wheel: zoom · drag: move",
 };

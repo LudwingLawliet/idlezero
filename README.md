@@ -2,13 +2,19 @@
 
 App de escritorio gratuita (Linux y Windows) que calcula, aldeano por aldeano, la ruta más rápida para cumplir un objetivo en Age of Empires II: Definitive Edition, y la muestra como un mapa de decisiones.
 
-Estado: **v0.1.0, Fases 0–3** + primer árbol visual: datos del juego, simulador económico determinista y optimizador. Solo economía (sin combate).
+Estado: **v0.2.0**: Fases 0–3 y el mapa de economía (Fase 4 en curso). Solo economía (sin combate).
 
-![Árbol de decisiones](docs/img/arbol.png)
+![Mapa de economía](docs/img/arbol.png)
 
-Eliges mapa y objetivo ("Edad Feudal lo antes posible", "Castillos", "20 arqueros"…) y la app calcula, aldeano por aldeano, la ruta más rápida sin dejar el Centro Urbano inactivo. La ruta óptima se ilumina; debajo de cada decisión, lo que costaría cambiarla ("+25 s"); arriba, otros caminos completos para comparar. La pestaña **Lista** da la orden por tick, lista para copiar.
+- **Mapa de economía:** el tiempo sube desde el inicio (0:00, 3 aldeanos, explorador y recursos) hacia arriba. En el centro, el CU y el nacimiento de cada aldeano; a la izquierda, lo que se construye (quién, cuándo, cuánto tarda y qué pasaría con otro número de constructores); a la derecha, la rama de cada aldeano por lo que recolecta; al lado, las reservas de cada recurso segundo a segundo.
+- **Objetivo libre:** cualquier combinación de edad, aldeanos, unidades, tecnologías y edificios (p. ej. «10 ballesteros + Emplumado»).
+- **Ramas alternativas:** al elegir un aldeano se ve qué pasaría si hiciera otra cosa («+25 s», «CU parado 6 s»); otros caminos completos se pueden simular y comparar.
+- **Calculadora:** cuánto junta de verdad un grupo de aldeanos en una tarea (carga, caminata, campamento, mejoras).
+- **Libro de recursos:** cada pago queda registrado; los tests garantizan que ningún recurso baja de 0 ni aparece de la nada.
 
-En Arabia neutra (valores aproximados): Feudal 9:15, Castillos 15:15, ambos con 0 s de CU inactivo. Especificación completa en [docs/SPEC.md](docs/SPEC.md).
+En Arabia neutra (valores aproximados), sin dejar el CU inactivo: Feudal 8:50, Castillos 15:15, Imperial 20:30.
+
+Arquitectura del proyecto: [docs/arquitectura.html](docs/arquitectura.html) (generada con Archify, con enlaces al código).
 
 ## Descargas
 

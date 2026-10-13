@@ -84,9 +84,13 @@ pub struct Plan {
 pub struct Alternative {
     #[serde(flatten)]
     pub choice: Choice,
+    /// Segundo en que se cumple el objetivo con esta alternativa (aunque el
+    /// CU haya parado; ver `tc_idle`). `None` = no se cumple.
     pub time: Option<u32>,
     /// Segundos de diferencia con la mejor ruta (positivo = peor).
     pub delta: Option<i64>,
+    /// Segundos que el CU queda parado con esta alternativa.
+    pub tc_idle: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -133,6 +137,10 @@ pub struct Optimizer<'a> {
 
 struct Run<'s> {
     time: Option<u32>,
+    /// Segundo en que se cumplió el objetivo aunque el CU haya parado.
+    reached: Option<u32>,
+    /// Segundos de CU parado (sin contar "sin más aldeanos en la orden").
+    tc_idle: u32,
     /// Segundo en que empezó cada investigación de edad.
     clicks: std::collections::BTreeMap<Age, u32>,
     decisions: Vec<Decision>,
@@ -553,9 +561,17 @@ impl<'a> Optimizer<'a> {
             self.apply(&mut sim, &c);
             i += 1;
         }
-        let time = (done(&sim.state) && self.tc_ok(&sim)).then_some(sim.state.time);
+        let reached = done(&sim.state).then_some(sim.state.time);
+        let time = reached.filter(|_| self.tc_ok(&sim));
+        let tc_idle = sim
+            .summary()
+            .tc_idle_seconds
+            .iter()
+            .filter(|(c, _)| **c != aoe2_sim::IdleCause::NoOrder)
+            .map(|(_, s)| *s)
+            .sum();
         let clicks = sim.summary().age_clicks.clone();
-        Run { time, clicks, decisions, checkpoints }
+        Run { time, reached, tc_idle, clicks, decisions, checkpoints }
     }
 
     /// Simula un plan completo y devuelve su línea de tiempo (para comparar
@@ -953,9 +969,13 @@ impl<'a> Optimizer<'a> {
         for (i, d) in run.decisions.iter().enumerate() {
             let mut alternatives = Vec::new();
             let mut eval = |choices: Vec<Choice>, alt: Choice| {
-                let time = self.time_from(run, &choices, i);
+                let r = match run.checkpoints.get(i) {
+                    Some(cp) => self.simulate_choices(&choices, Some((i, cp)), false),
+                    None => self.simulate_choices(&choices, None, false),
+                };
+                let time = r.reached;
                 let delta = time.zip(best_time).map(|(t, b)| t as i64 - b);
-                alternatives.push(Alternative { choice: alt, time, delta });
+                alternatives.push(Alternative { choice: alt, time, delta, tc_idle: r.tc_idle });
             };
             for p in &self.pools {
                 if *p != d.choice.pool && self.pool_relevant(p) {
@@ -976,7 +996,7 @@ impl<'a> Optimizer<'a> {
                 let alt = c[i].clone();
                 eval(c, alt);
             }
-            alternatives.sort_by_key(|a| (a.delta.unwrap_or(i64::MAX), a.choice.clone()));
+            alternatives.sort_by_key(|a| (a.delta.unwrap_or(i64::MAX), a.tc_idle, a.choice.clone()));
             nodes.push(TreeNode { index: i, decision: d.clone(), alternatives });
         }
         nodes

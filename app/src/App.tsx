@@ -1,25 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { AppInfo, OptimizeView, Plan } from "./types";
+import { AppInfo, Goal, OptimizeView, Plan, PlanView } from "./types";
 import { makeLabels } from "./labels";
-import Tree from "./Tree";
+import { layoutMap } from "./layout";
+import EconomyMap, { Selection } from "./EconomyMap";
 import SidePanel from "./SidePanel";
 import ListView from "./ListView";
+import Calculator from "./Calculator";
+import GoalBuilder, { emptyGoal } from "./GoalBuilder";
 import "./App.css";
 
 const RULES_URL = "https://www.xbox.com/en-US/developers/rules";
 
-function stored(key: string, fallback: string) {
+function stored<T>(key: string, fallback: T): T {
   try {
-    return localStorage.getItem(key) ?? fallback;
+    const v = localStorage.getItem(key);
+    return v ? (JSON.parse(v) as T) : fallback;
   } catch {
     return fallback;
   }
 }
 
-function remember(key: string, value: string) {
+function remember(key: string, value: unknown) {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(key, JSON.stringify(value));
   } catch {
     // Sin almacenamiento: la app funciona igual, solo no recuerda la elección.
   }
@@ -29,13 +33,16 @@ export default function App() {
   const [lang, setLang] = useState(() => stored("lang", "es"));
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [map, setMap] = useState(() => stored("map", "arabia_neutra"));
-  const [goal, setGoal] = useState(() => stored("goal", "feudal"));
+  const [goal, setGoal] = useState<Goal>(() => stored("goal", { ...emptyGoal(), id: "feudal", age: "Feudal" }));
   const [view, setView] = useState<OptimizeView | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"tree" | "list">("tree");
-  const [selected, setSelected] = useState<number | null>(null);
+  const [tab, setTab] = useState<"map" | "list" | "calc">("map");
+  const [selected, setSelected] = useState<Selection>(null);
+  const [cursor, setCursor] = useState<number | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [planView, setPlanView] = useState<PlanView | null>(null);
+  const [planBusy, setPlanBusy] = useState(false);
 
   useEffect(() => {
     invoke<AppInfo>("app_info", { lang }).then(setInfo, (e) => setError(String(e)));
@@ -48,27 +55,50 @@ export default function App() {
     remember("map", map);
     remember("goal", goal);
     invoke<OptimizeView>("optimize", { map, goal, lang })
-      .then((v) => {
-        setView(v);
-        setPlan(v.result.best);
-        setSelected(null);
-      }, (e) => setError(String(e)))
+      .then(
+        (v) => {
+          setView(v);
+          setPlan(v.result.best);
+          setPlanView(null);
+          setSelected(null);
+        },
+        (e) => setError(String(e)),
+      )
       .finally(() => setBusy(false));
   }, [map, goal, lang]);
 
-  // Primer cálculo al abrir, y de nuevo al cambiar de idioma (textos del motor).
+  // Primer cálculo al abrir y al cambiar de idioma (textos del motor).
   useEffect(() => {
     if (info) run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [info]);
 
+  // Otro camino: se simula entero para verlo en el mapa.
+  const choosePlan = (p: Plan) => {
+    if (!view) return;
+    setPlan(p);
+    setSelected(null);
+    if (p === view.result.best) {
+      setPlanView(null);
+      return;
+    }
+    setPlanBusy(true);
+    invoke<PlanView>("simulate_plan", { map, goal: view.result.goal, choices: p.choices, lang })
+      .then(setPlanView, (e) => setError(String(e)))
+      .finally(() => setPlanBusy(false));
+  };
+
   const mapInfo = info?.maps.find((m) => m.id === map);
   const labels = useMemo(() => (info ? makeLabels(info, lang, mapInfo) : null), [info, lang, mapInfo]);
-  const goalName = info?.goals.find((g) => g.id === goal)?.name ?? goal;
+  const timeline = planView?.timeline ?? view?.result.timeline;
+  const events = planView?.events ?? view?.events ?? [];
+  const goalTime = planView ? planView.time : view?.result.best.time ?? null;
+  const layout = useMemo(() => (timeline ? layoutMap(timeline, mapInfo) : null), [timeline, mapInfo]);
 
   if (!info || !labels) {
     return <div className="loading">{error ?? "IdleZero…"}</div>;
   }
+  const L = labels.ui;
 
   return (
     <div className="app">
@@ -81,32 +111,23 @@ export default function App() {
           </svg>
           <div>
             <h1>IdleZero</h1>
-            <span className="muted">{labels.ui.tagline}</span>
+            <span className="muted">{L.tagline}</span>
           </div>
         </div>
         <div className="controls">
           <label>
-            {labels.ui.map}
+            {L.map}
             <select value={map} onChange={(e) => setMap(e.target.value)}>
               {info.maps.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
+                  {m.test ? ` (${L.testMap})` : ""}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            {labels.ui.goal}
-            <select value={goal} onChange={(e) => setGoal(e.target.value)}>
-              {info.goals.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            {labels.ui.language}
+            {L.language}
             <select value={lang} onChange={(e) => setLang(e.target.value)}>
               {info.langs.map((l) => (
                 <option key={l.id} value={l.id}>
@@ -116,8 +137,12 @@ export default function App() {
             </select>
           </label>
           <button className="primary" onClick={run} disabled={busy}>
-            {busy ? labels.ui.calculating : labels.ui.calculate}
+            {busy ? L.calculating : L.calculate}
           </button>
+        </div>
+        <div className="goal-row">
+          <span className="goal-title">{L.goal}</span>
+          <GoalBuilder goal={goal} onChange={setGoal} info={info} labels={labels} />
         </div>
       </header>
 
@@ -126,23 +151,60 @@ export default function App() {
       <main>
         <section className="canvas">
           <div className="tabs">
-            <button className={tab === "tree" ? "active" : ""} onClick={() => setTab("tree")}>
-              {labels.ui.tabTree}
+            <button className={tab === "map" ? "active" : ""} onClick={() => setTab("map")}>
+              {L.tabMap}
             </button>
             <button className={tab === "list" ? "active" : ""} onClick={() => setTab("list")}>
-              {labels.ui.tabList}
+              {L.tabList}
             </button>
-            <span className="muted legend">{labels.ui.legend}</span>
+            <button className={tab === "calc" ? "active" : ""} onClick={() => setTab("calc")}>
+              {L.tabCalc}
+            </button>
+            {tab === "map" && <span className="muted legend">{L.zoomHint}</span>}
           </div>
-          <div className={`view${busy ? " busy" : ""}`}>
-            {view && tab === "tree" && (
-              <Tree result={view.result} labels={labels} selected={selected} onSelect={setSelected} plan={plan} />
+          <div className={`view${busy || planBusy ? " busy" : ""}`}>
+            {tab === "map" && view && timeline && layout && (
+              <EconomyMap
+                layout={layout}
+                timeline={timeline}
+                tree={planView ? [] : view.result.tree}
+                labels={labels}
+                selected={selected}
+                onSelect={setSelected}
+                cursor={cursor}
+                onCursor={setCursor}
+                goalTime={goalTime}
+              />
             )}
-            {view && tab === "list" && <ListView view={view} labels={labels} title={`IdleZero · ${goalName} · ${mapInfo?.name ?? map}`} />}
+            {tab === "list" && view && timeline && (
+              <ListView
+                tree={planView ? [] : view.result.tree}
+                events={events}
+                timeline={timeline}
+                labels={labels}
+                title={`IdleZero · ${mapInfo?.name ?? map}`}
+                orderToml={view.result.order_toml}
+              />
+            )}
+            {tab === "calc" && mapInfo && <Calculator map={mapInfo} labels={labels} />}
           </div>
         </section>
-        {view && plan && (
-          <SidePanel view={view} labels={labels} goalName={goalName} selected={selected} plan={plan} onPlan={setPlan} />
+        {view && plan && timeline && layout && tab !== "calc" && (
+          <SidePanel
+            result={view.result}
+            timeline={timeline}
+            layout={layout}
+            labels={labels}
+            goalTime={goalTime}
+            millis={view.millis}
+            cursor={cursor}
+            selected={selected}
+            map={map}
+            goal={view.result.goal}
+            plan={plan}
+            planBusy={planBusy}
+            onPlan={choosePlan}
+          />
         )}
       </main>
 

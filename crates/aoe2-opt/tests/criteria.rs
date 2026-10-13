@@ -68,9 +68,10 @@ fn tree_follows_best_route_and_alternatives_are_not_better() {
     for node in &r.tree {
         assert_eq!(node.decision.choice, r.best.choices[node.index]);
         assert!(!node.alternatives.is_empty());
-        // Tras el refinamiento, cambiar una sola decisión no mejora la ruta.
+        // Tras el refinamiento, cambiar una sola decisión no mejora la ruta
+        // (sin dejar el CU parado: con CU parado puede llegar antes, pero no vale).
         for alt in &node.alternatives {
-            if let Some(d) = alt.delta {
+            if let (Some(d), 0) = (alt.delta, alt.tc_idle) {
                 assert!(d >= 0, "alternativa mejor que la ruta óptima: {alt:?}");
             }
         }

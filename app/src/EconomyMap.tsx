@@ -8,7 +8,7 @@ export type Selection = { kind: "villager"; id: number } | { kind: "building"; p
 const STRIP_W = 64;
 const STRIP_GAP = 18;
 const TOP = 90; // espacio para cabeceras y la meta
-const BOTTOM = 110; // bloque de inicio
+const BOTTOM = 120; // nombres de columna + bloque de inicio
 
 interface Props {
   layout: MapLayout;
@@ -38,7 +38,7 @@ export default function EconomyMap({ layout, timeline, tree, labels, selected, o
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    const k = Math.min(1.1, Math.max(0.35, el.clientWidth / width));
+    const k = Math.min(1.1, Math.max(0.8, el.clientWidth / width));
     setView({ k, x: -layout.left * k + Math.max(0, (el.clientWidth - width * k) / 2), y: el.clientHeight - height * k });
   }, [layout, width, height]);
 
@@ -230,7 +230,8 @@ export default function EconomyMap({ layout, timeline, tree, labels, selected, o
                 const y1 = y(selNode.time) - 18 - i * 16;
                 const cls = a.delta === null ? "fail" : a.delta === 0 ? "same" : a.delta > 0 ? "worse" : "better";
                 const txt =
-                  a.delta === null ? L.impossible : a.delta === 0 ? `= ${L.same}` : `${a.delta > 0 ? "+" : ""}${a.delta} s`;
+                  (a.delta === null ? L.impossible : a.delta === 0 ? `= ${L.same}` : `${a.delta > 0 ? "+" : ""}${a.delta} s`) +
+                  (a.tc_idle > 0 ? ` · ${L.tcStopped} ${a.tc_idle} s` : "");
                 return (
                   <g key={i} className={`alt ${cls}`}>
                     <path d={`M ${x0} ${y0} C ${x0 + 40} ${y1}, ${x1 - 40} ${y1}, ${x1} ${y1}`} />
@@ -253,12 +254,30 @@ export default function EconomyMap({ layout, timeline, tree, labels, selected, o
                 <g key={r} className="strip">
                   <line x1={x0} x2={x0} y1={0} y2={layout.height} className="base" />
                   <path d={d} />
-                  <text x={x0 + STRIP_W} y={layout.height + 14} textAnchor="end" className="max">
+                  <text x={x0 + STRIP_W} y={layout.height + 15} textAnchor="end" className="max">
                     {L.max} {Math.round(maxRes[i])}
                   </text>
                 </g>
               );
             })}
+
+            {/* Nombres de columna también abajo, junto al inicio */}
+            <g className="heads">
+              <text x={TC_X - 60} y={layout.height + 16} textAnchor="end" className="zone">
+                ← {L.build}
+              </text>
+              <text x={TC_X + TC_W / 2} y={layout.height + 16} textAnchor="middle" className="zone">
+                {L.tc}
+              </text>
+              {layout.columns.map((c) => (
+                <g key={c.pool}>
+                  <image href={labels.poolIcon(c.pool)} x={c.x} y={layout.height + 3} width={16} height={16} />
+                  <text x={c.x + 19} y={layout.height + 15} className="col-label small">
+                    {labels.pool(c.pool)}
+                  </text>
+                </g>
+              ))}
+            </g>
 
             {/* Meta (arriba) e inicio (abajo) */}
             <g className="goal-banner">
@@ -267,11 +286,11 @@ export default function EconomyMap({ layout, timeline, tree, labels, selected, o
               </text>
             </g>
             <g className="start-block">
-              <rect x={layout.left + 4} y={layout.height + 24} width={contentRight - layout.left - 8} height={66} rx={8} />
-              <text x={layout.left + 18} y={layout.height + 48} className="start-title">
+              <rect x={layout.left + 4} y={layout.height + 30} width={contentRight - layout.left - 8} height={66} rx={8} />
+              <text x={layout.left + 18} y={layout.height + 54} className="start-title">
                 {L.start} · 0:00 · {labels.t("ages.Dark")}
               </text>
-              <text x={layout.left + 18} y={layout.height + 70}>
+              <text x={layout.left + 18} y={layout.height + 76}>
                 {L.startDesc} · {labels.t("resources.food")} {Math.round(timeline.series.food[0])} ·{" "}
                 {labels.t("resources.wood")} {Math.round(timeline.series.wood[0])} · {labels.t("resources.gold")}{" "}
                 {Math.round(timeline.series.gold[0])} · {labels.t("resources.stone")} {Math.round(timeline.series.stone[0])} ·{" "}

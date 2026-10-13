@@ -73,6 +73,8 @@ export interface Snapshot {
 export interface Alternative extends Choice {
   time: number | null;
   delta: number | null;
+  /** Segundos que el CU queda parado con esta alternativa. */
+  tc_idle: number;
 }
 
 export interface TreeNode extends Choice {
