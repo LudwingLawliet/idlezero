@@ -136,6 +136,9 @@ fn a_second_town_center_produces_villagers_and_builders_speed_it_up() {
     let sc = aoe2_sim::Scenario::with_order(&aoe2_data::repo_data_dir(), "arabia_neutra", order).unwrap();
     let run = |overrides: BTreeMap<usize, u32>| {
         let mut sim = Sim::new(&sc).unwrap();
+        // Los CU adicionales piden la Edad de los Castillos: se empieza ya en ella
+        // para probar solo la producción y los constructores.
+        sim.state.age = Age::Castle;
         sim.set_builder_overrides(overrides);
         sim.advance(1500, &|_| false);
         sim.into_timeline()
@@ -168,4 +171,13 @@ fn a_second_town_center_produces_villagers_and_builders_speed_it_up() {
         })
         .unwrap();
     assert!(tc_done_6 < tc_done, "6 constructores: {tc_done_6} vs 3: {tc_done}");
+}
+
+#[test]
+fn extra_town_center_needs_castle_age() {
+    let order = aoe2_sim::BuildOrder::parse(SECOND_TC).unwrap();
+    let sc = aoe2_sim::Scenario::with_order(&aoe2_data::repo_data_dir(), "arabia_neutra", order).unwrap();
+    let mut sim = Sim::new(&sc).unwrap();
+    sim.advance(900, &|_| false);
+    assert_eq!(sim.state.tcs.len(), 1, "en Edad Oscura no se puede construir otro CU");
 }

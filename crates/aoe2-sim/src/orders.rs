@@ -80,6 +80,9 @@ pub struct Assign {
     /// Pool junto al que se construye el punto de entrega (por defecto, la
     /// primera fuente del mapa que usa ese edificio).
     pub at: Option<String>,
+    /// Constructores en total (este aldeano + ayudantes del pool de constructores).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub builders: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -31,6 +31,36 @@ buildings = [103, 84, 87, 101]       # Herrería, Mercado, Galería de tiro, Est
 source = "https://ageofempires.fandom.com/wiki/Castle_Age_(Age_of_Empires_II)"
 approximate = false
 
+# Edad mínima para construir, cuando difiere del árbol de aoe2techtree: el CU
+# figura en Edad Oscura (por el inicial), pero los CU adicionales necesitan
+# la Edad de los Castillos en AoE2 DE (salvo bonos de civilización).
+[building_age]
+109 = "Castle"
+
+# Tecnología previa que exige cada tecnología (aoe2techtree no lo incluye).
+# Fuente: árbol tecnológico de AoE2 DE (líneas de herrería, económicas y otras).
+[tech_requires]
+200 = 199   # Flecha de punzón <- Emplumado
+201 = 200   # Brazal <- Flecha de punzón
+212 = 211   # Armadura de cuero (arq.) <- acolchada
+219 = 212   # Armadura de anillas (arq.) <- de cuero
+68 = 67     # Fundición <- Forja
+75 = 68     # Alto horno <- Fundición
+76 = 74     # Cota de malla <- Armadura de escamas
+77 = 76     # Armadura de placas <- Cota de malla
+82 = 81     # Barda de malla <- Barda de escamas
+80 = 82     # Barda de placas <- Barda de malla
+203 = 202   # Sierra de arco <- Hacha de doble filo
+221 = 203   # Sierra a dos manos <- Sierra de arco
+13 = 14     # Arado pesado <- Collera
+12 = 13     # Rotación de cultivos <- Arado pesado
+249 = 213   # Carro de mano <- Carretilla
+182 = 55    # Minería de oro en pozo <- Minería de oro
+279 = 278   # Minería de piedra en pozo <- Minería de piedra
+280 = 8     # Patrulla urbana <- Guardia urbana
+436 = 437   # Tácticas partas <- Anillo de arquero
+17 = 23     # Banca <- Acuñación
+
 # Tecnologías de edad: al terminar, el jugador pasa a la edad indicada.
 [ages]
 101 = "Feudal"

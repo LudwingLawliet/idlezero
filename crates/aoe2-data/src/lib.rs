@@ -21,7 +21,7 @@ pub use rates::GatherRates;
 pub use rules::Rules;
 
 /// Versión del esquema de `game_data.json`. Subirla al cambiar los tipos.
-pub const SCHEMA_VERSION: u32 = 1;
+pub const SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Age {
@@ -150,6 +150,10 @@ pub struct GameData {
     pub units: BTreeMap<u32, Unit>,
     pub buildings: BTreeMap<u32, Building>,
     pub techs: BTreeMap<u32, Tech>,
+    /// Unidades que se obtienen con una mejora (Ballestero = investigar
+    /// "Crossbow"): unidad -> tecnología de mejora (incluida en `techs`).
+    #[serde(default)]
+    pub unit_upgrades: BTreeMap<u32, u32>,
 }
 
 /// IDs de aoe2techtree que el motor necesita con nombre propio.

@@ -64,26 +64,28 @@ impl Goal {
     /// Valida los nombres contra las reglas.
     pub fn validate(&self, sc: &Scenario) -> Result<(), String> {
         for u in &self.units {
-            sc.rules.unit_id(&u.unit).ok_or(format!("unidad desconocida: {}", u.unit))?;
+            sc.unit_ref(&u.unit).ok_or(format!("unidad desconocida: {}", u.unit))?;
         }
         for t in &self.techs {
-            sc.rules.tech_id(t).ok_or(format!("tecnología desconocida: {t}"))?;
+            sc.tech_ref(t).ok_or(format!("tecnología desconocida: {t}"))?;
         }
         for b in &self.buildings {
-            sc.rules.building_id(&b.building).ok_or(format!("edificio desconocido: {}", b.building))?;
+            sc.building_ref(&b.building).ok_or(format!("edificio desconocido: {}", b.building))?;
         }
         Ok(())
     }
 
     pub fn is_done(&self, sc: &Scenario, s: &GameState) -> bool {
+        // (los requisitos implícitos, como la mejora de Ballestero, ya los exige
+        // el entrenamiento; aquí solo cuenta lo pedido)
         self.age.is_none_or(|a| s.age >= a)
             && self.villagers.is_none_or(|n| s.villagers.len() as u32 >= n)
-            && self.units.iter().all(|u| s.units_of(sc.rules.unit_id(&u.unit).unwrap()) >= u.count)
-            && self.techs.iter().all(|t| s.has_tech(sc.rules.tech_id(t).unwrap()))
+            && self.units.iter().all(|u| s.units_of(sc.unit_ref(&u.unit).unwrap()) >= u.count)
+            && self.techs.iter().all(|t| s.has_tech(sc.tech_ref(t).unwrap()))
             && self
                 .buildings
                 .iter()
-                .all(|b| s.count_built(sc.rules.building_id(&b.building).unwrap()) as u32 >= b.count)
+                .all(|b| s.count_built(sc.building_ref(&b.building).unwrap()) as u32 >= b.count)
     }
 
     /// Edad mínima que exige el objetivo (la pedida o la de sus unidades,
@@ -92,18 +94,60 @@ impl Goal {
         let mut age = self.age.unwrap_or(Age::Dark);
         let tree_age = |t: Option<&aoe2_data::TreeInfo>| t.map_or(Age::Dark, |t| t.age);
         for u in &self.units {
-            let id = sc.rules.unit_id(&u.unit).unwrap();
+            let id = sc.unit_ref(&u.unit).unwrap();
             age = age.max(tree_age(sc.data.unit(id).and_then(|x| x.tree.as_ref())));
         }
         for t in &self.techs {
-            let id = sc.rules.tech_id(t).unwrap();
+            let id = sc.tech_ref(t).unwrap();
             age = age.max(tree_age(sc.data.tech(id).and_then(|x| x.tree.as_ref())));
         }
         for b in &self.buildings {
-            let id = sc.rules.building_id(&b.building).unwrap();
-            age = age.max(tree_age(sc.data.building(id).and_then(|x| x.tree.as_ref())));
+            let id = sc.building_ref(&b.building).unwrap();
+            age = age.max(sc.building_age(id));
+        }
+        for u in &self.units {
+            let id = sc.unit_ref(&u.unit).unwrap();
+            if let Some(&up) = sc.data.unit_upgrades.get(&id) {
+                age = age.max(tree_age(sc.data.tech(up).and_then(|x| x.tree.as_ref())));
+            }
         }
         age
+    }
+
+    /// Lo que hace falta para la próxima etapa, como lo piensa un jugador:
+    /// si falta subir de edad, solo la siguiente edad (y sus edificios); ya en
+    /// la edad del objetivo, todo lo que falta. Así no se manda gente al oro
+    /// en el minuto 0 para unidades que no se pueden hacer hasta Feudal.
+    pub fn stage_cost(&self, sc: &Scenario, s: &GameState) -> Cost {
+        let target = self.target_age(sc);
+        if s.age >= target {
+            return self.remaining_cost(sc, s);
+        }
+        let next = match s.age {
+            Age::Dark => Age::Feudal,
+            Age::Feudal => Age::Castle,
+            _ => Age::Imperial,
+        };
+        let stage = Goal { age: Some(next), ..Goal::default() };
+        let mut c = stage.remaining_cost(sc, s);
+        // Más lo que el objetivo pide en la edad actual (p. ej. Telar).
+        let now = Goal {
+            techs: self
+                .techs
+                .iter()
+                .filter(|t| {
+                    sc.tech_ref(t).and_then(|id| sc.data.tech(id)).and_then(|x| x.tree.as_ref()).is_some_and(|tr| tr.age <= s.age)
+                })
+                .cloned()
+                .collect(),
+            ..Goal::default()
+        };
+        let extra = now.remaining_cost(sc, s);
+        c.food += extra.food;
+        c.wood += extra.wood;
+        c.gold += extra.gold;
+        c.stone += extra.stone;
+        c
     }
 
     /// Costo de lo que falta para cumplir el objetivo desde `s` (sin contar
@@ -143,7 +187,7 @@ impl Goal {
         }
         // Edificios productores (los que mantiene auto.production) y sus requisitos.
         for u in self.units.iter().take(1) {
-            let id = sc.rules.unit_id(&u.unit).unwrap();
+            let id = sc.unit_ref(&u.unit).unwrap();
             let mut b = sc.data.unit(id).and_then(|x| x.tree.as_ref()).and_then(|t| t.produced_at);
             let mut wanted = PRODUCTION_BUILDINGS;
             while let Some(bid) = b {
@@ -154,19 +198,30 @@ impl Goal {
             }
         }
         for u in &self.units {
-            let id = sc.rules.unit_id(&u.unit).unwrap();
+            let id = sc.unit_ref(&u.unit).unwrap();
             let in_training = s.training.iter().filter(|r| r.job == aoe2_sim::state::Job::Unit(id)).count() as u32;
             let left = u.count.saturating_sub(s.units_of(id) + in_training);
             add(&sc.data.unit(id).unwrap().cost, left);
         }
+        // Tecnologías pedidas, sus previas y las mejoras de las unidades.
+        let mut techs: Vec<u32> = Vec::new();
         for t in &self.techs {
-            let id = sc.rules.tech_id(t).unwrap();
+            techs.extend(sc.tech_chain(sc.tech_ref(t).unwrap()));
+        }
+        for u in &self.units {
+            if let Some(&up) = sc.data.unit_upgrades.get(&sc.unit_ref(&u.unit).unwrap()) {
+                techs.extend(sc.tech_chain(up));
+            }
+        }
+        techs.sort();
+        techs.dedup();
+        for id in techs {
             if !s.has_tech(id) && !s.research.iter().any(|r| r.job == aoe2_sim::state::Job::Research(id)) {
                 add(&sc.data.tech(id).unwrap().cost, 1);
             }
         }
         for b in &self.buildings {
-            let id = sc.rules.building_id(&b.building).unwrap();
+            let id = sc.building_ref(&b.building).unwrap();
             let left = b.count.saturating_sub(s.count_planned(id) as u32);
             add(&sc.data.building(id).unwrap().cost, left);
         }

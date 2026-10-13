@@ -15,6 +15,12 @@ pub struct Rules {
     /// Tecnología de edad (id como texto) -> edad a la que lleva.
     pub ages: BTreeMap<String, Age>,
     pub names: Names,
+    /// Edad mínima de construcción que corrige el árbol (id como texto).
+    #[serde(default)]
+    pub building_age: BTreeMap<String, Age>,
+    /// Tecnología previa de cada tecnología (ids como texto).
+    #[serde(default)]
+    pub tech_requires: BTreeMap<String, u32>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -70,6 +76,14 @@ impl Rules {
 
     pub fn tech_id(&self, name: &str) -> Option<u32> {
         self.names.techs.get(name).copied()
+    }
+
+    pub fn building_age_override(&self, building: u32) -> Option<Age> {
+        self.building_age.get(&building.to_string()).copied()
+    }
+
+    pub fn tech_prerequisite(&self, tech: u32) -> Option<u32> {
+        self.tech_requires.get(&tech.to_string()).copied()
     }
 
     pub fn unit_id(&self, name: &str) -> Option<u32> {

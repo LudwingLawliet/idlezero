@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "source": {
     "repository": "https://github.com/SiegeEngineers/aoe2techtree",
     "commit": "3bb43b1439eef88dfe7fe892d7f7dc41ac9dd76f"
@@ -6714,6 +6714,28 @@
     }
   },
   "techs": {
+    "2": {
+      "id": 2,
+      "internal_name": "Elite Tarkan",
+      "names": {
+        "en": "Elite Tarkan (upgrade)",
+        "es": "Tarcano de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "3": {
       "id": 3,
       "internal_name": "British Yeoman",
@@ -7127,6 +7149,28 @@
         "civ_count": 1
       }
     },
+    "27": {
+      "id": 27,
+      "internal_name": "Elite Plumed Archer",
+      "names": {
+        "en": "Elite Plumed Archer (upgrade)",
+        "es": "Arquero emplumado de élite (mejora)"
+      },
+      "cost": {
+        "food": 700,
+        "wood": 1000,
+        "gold": 0,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "28": {
       "id": 28,
       "internal_name": "Bimaristan",
@@ -7450,6 +7494,28 @@
       },
       "research_time": 60,
       "repeatable": true,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "60": {
+      "id": 60,
+      "internal_name": "Elite Conquistador",
+      "names": {
+        "en": "Elite Conquistador (upgrade)",
+        "es": "Conquistador de élite (mejora)"
+      },
+      "cost": {
+        "food": 900,
+        "wood": 0,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
       "tree": {
         "age": "Imperial",
         "produced_at": 82,
@@ -7782,6 +7848,72 @@
         "civ_count": 56
       }
     },
+    "96": {
+      "id": 96,
+      "internal_name": "Capped Ram",
+      "names": {
+        "en": "Capped Ram (upgrade)",
+        "es": "Ariete cubierto (mejora)"
+      },
+      "cost": {
+        "food": 300,
+        "wood": 0,
+        "gold": 0,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 49,
+        "requires_building": null,
+        "civ_count": 51
+      }
+    },
+    "98": {
+      "id": 98,
+      "internal_name": "Elite Skirmisher",
+      "names": {
+        "en": "Elite Skirmisher (upgrade)",
+        "es": "Hostigador de élite (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 230,
+        "gold": 130,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Castle",
+        "produced_at": 87,
+        "requires_building": null,
+        "civ_count": 56
+      }
+    },
+    "100": {
+      "id": 100,
+      "internal_name": "Crossbow",
+      "names": {
+        "en": "Crossbowman (upgrade)",
+        "es": "Ballestero (mejora)"
+      },
+      "cost": {
+        "food": 175,
+        "wood": 0,
+        "gold": 100,
+        "stone": 0
+      },
+      "research_time": 35,
+      "repeatable": false,
+      "tree": {
+        "age": "Castle",
+        "produced_at": 87,
+        "requires_building": null,
+        "civ_count": 54
+      }
+    },
     "101": {
       "id": 101,
       "internal_name": "Middle Age",
@@ -7914,6 +8046,28 @@
         "civ_count": 43
       }
     },
+    "197": {
+      "id": 197,
+      "internal_name": "Pikeman",
+      "names": {
+        "en": "Pikeman (upgrade)",
+        "es": "Piquero (mejora)"
+      },
+      "cost": {
+        "food": 160,
+        "wood": 0,
+        "gold": 90,
+        "stone": 0
+      },
+      "research_time": 35,
+      "repeatable": false,
+      "tree": {
+        "age": "Castle",
+        "produced_at": 1665,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "199": {
       "id": 199,
       "internal_name": "Fletching",
@@ -8024,6 +8178,50 @@
         "civ_count": 56
       }
     },
+    "207": {
+      "id": 207,
+      "internal_name": "Long Swordsman",
+      "names": {
+        "en": "Long Swordsman (upgrade)",
+        "es": "Soldado con espada larga (mejora)"
+      },
+      "cost": {
+        "food": 150,
+        "wood": 0,
+        "gold": 65,
+        "stone": 0
+      },
+      "research_time": 40,
+      "repeatable": false,
+      "tree": {
+        "age": "Castle",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 51
+      }
+    },
+    "209": {
+      "id": 209,
+      "internal_name": "Cavalier",
+      "names": {
+        "en": "Cavalier (upgrade)",
+        "es": "Caballero (mejora)"
+      },
+      "cost": {
+        "food": 300,
+        "wood": 0,
+        "gold": 300,
+        "stone": 0
+      },
+      "research_time": 80,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 39
+      }
+    },
     "211": {
       "id": 211,
       "internal_name": "Padded Archer Armor",
@@ -8112,6 +8310,50 @@
         "civ_count": 50
       }
     },
+    "217": {
+      "id": 217,
+      "internal_name": "Two-Handed Swordsman",
+      "names": {
+        "en": "Two-Handed Swordsman (upgrade)",
+        "es": "Espadachín de mandoble (mejora)"
+      },
+      "cost": {
+        "food": 200,
+        "wood": 0,
+        "gold": 100,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 49
+      }
+    },
+    "218": {
+      "id": 218,
+      "internal_name": "Heavy Cavalry Archer",
+      "names": {
+        "en": "Heavy Cavalry Archer (upgrade)",
+        "es": "Arquero de caballería pesada (mejora)"
+      },
+      "cost": {
+        "food": 900,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 87,
+        "requires_building": null,
+        "civ_count": 27
+      }
+    },
     "219": {
       "id": 219,
       "internal_name": "Ring Archer Armor",
@@ -8154,6 +8396,28 @@
         "produced_at": 562,
         "requires_building": null,
         "civ_count": 36
+      }
+    },
+    "222": {
+      "id": 222,
+      "internal_name": "Man-At-Arms",
+      "names": {
+        "en": "Man-at-Arms (upgrade)",
+        "es": "Hombre de armas (mejora)"
+      },
+      "cost": {
+        "food": 100,
+        "wood": 0,
+        "gold": 40,
+        "stone": 0
+      },
+      "research_time": 40,
+      "repeatable": false,
+      "tree": {
+        "age": "Feudal",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 52
       }
     },
     "230": {
@@ -8222,6 +8486,94 @@
         "civ_count": 42
       }
     },
+    "236": {
+      "id": 236,
+      "internal_name": "Heavy Camel",
+      "names": {
+        "en": "Heavy Camel Rider (upgrade)",
+        "es": "Jinete de camello pesado (mejora)"
+      },
+      "cost": {
+        "food": 325,
+        "wood": 0,
+        "gold": 360,
+        "stone": 0
+      },
+      "research_time": 105,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 12
+      }
+    },
+    "237": {
+      "id": 237,
+      "internal_name": "Arbalest",
+      "names": {
+        "en": "Arbalester (upgrade)",
+        "es": "Arbalestero (mejora)"
+      },
+      "cost": {
+        "food": 450,
+        "wood": 0,
+        "gold": 350,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 87,
+        "requires_building": null,
+        "civ_count": 30
+      }
+    },
+    "239": {
+      "id": 239,
+      "internal_name": "Heavy Scorpion",
+      "names": {
+        "en": "Heavy Scorpion (upgrade)",
+        "es": "Escorpión pesado (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 750,
+        "gold": 0,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 49,
+        "requires_building": null,
+        "civ_count": 39
+      }
+    },
+    "244": {
+      "id": 244,
+      "internal_name": "Heavy Demolition",
+      "names": {
+        "en": "Heavy Demo Ship (upgrade)",
+        "es": "Buque de dem. pesado (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 250,
+        "gold": 300,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 45,
+        "requires_building": null,
+        "civ_count": 25
+      }
+    },
     "249": {
       "id": 249,
       "internal_name": "Hand Cart",
@@ -8264,6 +8616,116 @@
         "produced_at": 104,
         "requires_building": null,
         "civ_count": 48
+      }
+    },
+    "254": {
+      "id": 254,
+      "internal_name": "Light Cavalry",
+      "names": {
+        "en": "Light Cavalry (upgrade)",
+        "es": "Caballería ligera (mejora)"
+      },
+      "cost": {
+        "food": 150,
+        "wood": 0,
+        "gold": 50,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Castle",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 49
+      }
+    },
+    "255": {
+      "id": 255,
+      "internal_name": "Siege Ram",
+      "names": {
+        "en": "Siege Ram (upgrade)",
+        "es": "Ariete de asedio (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 0,
+        "stone": 0
+      },
+      "research_time": 75,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 49,
+        "requires_building": null,
+        "civ_count": 32
+      }
+    },
+    "257": {
+      "id": 257,
+      "internal_name": "Onager",
+      "names": {
+        "en": "Onager (upgrade)",
+        "es": "Onagro (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 75,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 49,
+        "requires_building": null,
+        "civ_count": 50
+      }
+    },
+    "264": {
+      "id": 264,
+      "internal_name": "Champion",
+      "names": {
+        "en": "Champion (upgrade)",
+        "es": "Campeón (mejora)"
+      },
+      "cost": {
+        "food": 650,
+        "wood": 0,
+        "gold": 350,
+        "stone": 0
+      },
+      "research_time": 70,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 39
+      }
+    },
+    "265": {
+      "id": 265,
+      "internal_name": "Paladin",
+      "names": {
+        "en": "Paladin (upgrade)",
+        "es": "Paladín (mejora)"
+      },
+      "cost": {
+        "food": 1300,
+        "wood": 0,
+        "gold": 750,
+        "stone": 0
+      },
+      "research_time": 170,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 10
       }
     },
     "278": {
@@ -8398,6 +8860,28 @@
         "civ_count": 39
       }
     },
+    "320": {
+      "id": 320,
+      "internal_name": "Siege Onager",
+      "names": {
+        "en": "Siege Onager (upgrade)",
+        "es": "Onagro de asedio (mejora)"
+      },
+      "cost": {
+        "food": 1450,
+        "wood": 0,
+        "gold": 1000,
+        "stone": 0
+      },
+      "research_time": 150,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 49,
+        "requires_building": null,
+        "civ_count": 15
+      }
+    },
     "321": {
       "id": 321,
       "internal_name": "Sappers",
@@ -8440,6 +8924,292 @@
         "produced_at": 209,
         "requires_building": null,
         "civ_count": 56
+      }
+    },
+    "360": {
+      "id": 360,
+      "internal_name": "Elite Longbow",
+      "names": {
+        "en": "Elite Longbowman (upgrade)",
+        "es": "Arquero con arco largo de élite (mejora)"
+      },
+      "cost": {
+        "food": 850,
+        "wood": 0,
+        "gold": 850,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "361": {
+      "id": 361,
+      "internal_name": "Elite Cataphract",
+      "names": {
+        "en": "Elite Cataphract (upgrade)",
+        "es": "Catafracta de élite (mejora)"
+      },
+      "cost": {
+        "food": 1200,
+        "wood": 0,
+        "gold": 800,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "362": {
+      "id": 362,
+      "internal_name": "Elite Chu Ko Nu",
+      "names": {
+        "en": "Elite Chu Ko Nu (upgrade)",
+        "es": "Chu ko nu de élite (mejora)"
+      },
+      "cost": {
+        "food": 1300,
+        "wood": 0,
+        "gold": 1300,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "363": {
+      "id": 363,
+      "internal_name": "Elite Throwing Axemen",
+      "names": {
+        "en": "Elite Throwing Axeman (upgrade)",
+        "es": "Lanzador de hachas de élite (mejora)"
+      },
+      "cost": {
+        "food": 850,
+        "wood": 0,
+        "gold": 550,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "364": {
+      "id": 364,
+      "internal_name": "Elite Teutonic Knight",
+      "names": {
+        "en": "Elite Teutonic Knight (upgrade)",
+        "es": "Caballero teutónico de élite (mejora)"
+      },
+      "cost": {
+        "food": 950,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "365": {
+      "id": 365,
+      "internal_name": "Elite Huskarl",
+      "names": {
+        "en": "Elite Huskarl (upgrade)",
+        "es": "Huscarle de élite (mejora)"
+      },
+      "cost": {
+        "food": 1200,
+        "wood": 0,
+        "gold": 550,
+        "stone": 0
+      },
+      "research_time": 40,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "366": {
+      "id": 366,
+      "internal_name": "Elite Samurai",
+      "names": {
+        "en": "Elite Samurai (upgrade)",
+        "es": "Samurai de élite (mejora)"
+      },
+      "cost": {
+        "food": 750,
+        "wood": 0,
+        "gold": 650,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "367": {
+      "id": 367,
+      "internal_name": "Elite War Elephant",
+      "names": {
+        "en": "Elite War Elephant (upgrade)",
+        "es": "Elefante de guerra de élite (mejora)"
+      },
+      "cost": {
+        "food": 1350,
+        "wood": 0,
+        "gold": 800,
+        "stone": 0
+      },
+      "research_time": 75,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "368": {
+      "id": 368,
+      "internal_name": "Elite Mameluke",
+      "names": {
+        "en": "Elite Mameluke (upgrade)",
+        "es": "Mameluco de élite (mejora)"
+      },
+      "cost": {
+        "food": 600,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "369": {
+      "id": 369,
+      "internal_name": "Elite Jannisary",
+      "names": {
+        "en": "Elite Janissary (upgrade)",
+        "es": "Jenízaro de élite (mejora)"
+      },
+      "cost": {
+        "food": 850,
+        "wood": 0,
+        "gold": 750,
+        "stone": 0
+      },
+      "research_time": 55,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "370": {
+      "id": 370,
+      "internal_name": "Elite Woad Raider",
+      "names": {
+        "en": "Elite Woad Raider (upgrade)",
+        "es": "Incursor azul de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 800,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "371": {
+      "id": 371,
+      "internal_name": "Elite Mangudai",
+      "names": {
+        "en": "Elite Mangudai (upgrade)",
+        "es": "Mangudai de élite (mejora)"
+      },
+      "cost": {
+        "food": 1100,
+        "wood": 0,
+        "gold": 675,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "372": {
+      "id": 372,
+      "internal_name": "Unique Heroic Viking LBT",
+      "names": {
+        "en": "Elite Longship (upgrade)",
+        "es": "Drakkar de élite (mejora)"
+      },
+      "cost": {
+        "food": 750,
+        "wood": 0,
+        "gold": 475,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 45,
+        "requires_building": null,
+        "civ_count": 4
       }
     },
     "373": {
@@ -8508,6 +9278,28 @@
         "civ_count": 38
       }
     },
+    "376": {
+      "id": 376,
+      "internal_name": "Elite Cannon Galley",
+      "names": {
+        "en": "Elite Cannon Galleon (upgrade)",
+        "es": "Galeón artillado de élite (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 525,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 30,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 45,
+        "requires_building": null,
+        "civ_count": 20
+      }
+    },
     "377": {
       "id": 377,
       "internal_name": "Siege Engineers",
@@ -8574,6 +9366,50 @@
         "civ_count": 39
       }
     },
+    "384": {
+      "id": 384,
+      "internal_name": "Heavy Eagle Warrior",
+      "names": {
+        "en": "Eagle Warrior (upgrade)",
+        "es": "Guerrero águila (mejora)"
+      },
+      "cost": {
+        "food": 200,
+        "wood": 0,
+        "gold": 200,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Castle",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 2
+      }
+    },
+    "398": {
+      "id": 398,
+      "internal_name": "Elite Berserk",
+      "names": {
+        "en": "Elite Berserk (upgrade)",
+        "es": "Berserker de élite (mejora)"
+      },
+      "cost": {
+        "food": 1075,
+        "wood": 0,
+        "gold": 475,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "408": {
       "id": 408,
       "internal_name": "Spy Technology",
@@ -8594,6 +9430,94 @@
         "produced_at": 82,
         "requires_building": null,
         "civ_count": 56
+      }
+    },
+    "428": {
+      "id": 428,
+      "internal_name": "Hussar",
+      "names": {
+        "en": "Hussar (upgrade)",
+        "es": "Húsar (mejora)"
+      },
+      "cost": {
+        "food": 500,
+        "wood": 0,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 30
+      }
+    },
+    "429": {
+      "id": 429,
+      "internal_name": "Halberdier",
+      "names": {
+        "en": "Halberdier (upgrade)",
+        "es": "Alabardero (mejora)"
+      },
+      "cost": {
+        "food": 300,
+        "wood": 0,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 1665,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "432": {
+      "id": 432,
+      "internal_name": "Elite Jaguar Man",
+      "names": {
+        "en": "Elite Jaguar Warrior (upgrade)",
+        "es": "Guerrero jaguar de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "434": {
+      "id": 434,
+      "internal_name": "Elite Eagle Warrior",
+      "names": {
+        "en": "Elite Eagle Warrior (upgrade)",
+        "es": "Guerrero águila de élite (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 2
       }
     },
     "435": {
@@ -8765,6 +9689,50 @@
       },
       "research_time": 60,
       "repeatable": true,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "448": {
+      "id": 448,
+      "internal_name": "Elite Turtle Ship",
+      "names": {
+        "en": "Elite Turtle Ship (upgrade)",
+        "es": "Barco tortuga de élite (mejora)"
+      },
+      "cost": {
+        "food": 650,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 65,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 45,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "450": {
+      "id": 450,
+      "internal_name": "Elite War Wagon",
+      "names": {
+        "en": "Elite War Wagon (upgrade)",
+        "es": "Carreta de guerra de élite (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 1000,
+        "gold": 800,
+        "stone": 0
+      },
+      "research_time": 75,
+      "repeatable": false,
       "tree": {
         "age": "Imperial",
         "produced_at": 82,
@@ -8946,6 +9914,72 @@
         "produced_at": 82,
         "requires_building": null,
         "civ_count": 1
+      }
+    },
+    "468": {
+      "id": 468,
+      "internal_name": "Elite Genoese Bow",
+      "names": {
+        "en": "Elite Genoese Crossbowman (upgrade)",
+        "es": "Genovés ballestero de élite (mejora)"
+      },
+      "cost": {
+        "food": 900,
+        "wood": 0,
+        "gold": 750,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "472": {
+      "id": 472,
+      "internal_name": "Elite Magyar Huszar",
+      "names": {
+        "en": "Elite Magyar Huszar (upgrade)",
+        "es": "Huszár magiar de élite (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 0,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "481": {
+      "id": 481,
+      "internal_name": "Elite Elephant Archer",
+      "names": {
+        "en": "Elite Elephant Archer (upgrade)",
+        "es": "Arquero en elefante de élite (mejora)"
+      },
+      "cost": {
+        "food": 900,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 80,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 87,
+        "requires_building": null,
+        "civ_count": 3
       }
     },
     "482": {
@@ -9212,6 +10246,28 @@
         "civ_count": 1
       }
     },
+    "504": {
+      "id": 504,
+      "internal_name": "Elite Siege Tower",
+      "names": {
+        "en": "Elite Boyar (upgrade)",
+        "es": "Boyardo de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "506": {
       "id": 506,
       "internal_name": "Indians UT",
@@ -9249,6 +10305,28 @@
       },
       "research_time": 40,
       "repeatable": true,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "509": {
+      "id": 509,
+      "internal_name": "Elite Kamayuk",
+      "names": {
+        "en": "Elite Kamayuk (upgrade)",
+        "es": "Kamayuk de élite (mejora)"
+      },
+      "cost": {
+        "food": 900,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
       "tree": {
         "age": "Imperial",
         "produced_at": 82,
@@ -9359,6 +10437,138 @@
       },
       "research_time": 40,
       "repeatable": true,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "521": {
+      "id": 521,
+      "internal_name": "Heavy Camel",
+      "names": {
+        "en": "Imperial Camel Rider (upgrade)",
+        "es": "Jinete de camello imperial (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 125,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "526": {
+      "id": 526,
+      "internal_name": "Savar",
+      "names": {
+        "en": "Savar (upgrade)",
+        "es": "Savar (mejora)"
+      },
+      "cost": {
+        "food": 1200,
+        "wood": 0,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 160,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "563": {
+      "id": 563,
+      "internal_name": "Elite Organ Gun",
+      "names": {
+        "en": "Elite Organ Gun (upgrade)",
+        "es": "Cañón de salvas de élite (mejora)"
+      },
+      "cost": {
+        "food": 1200,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "565": {
+      "id": 565,
+      "internal_name": "Elite Camel Archer",
+      "names": {
+        "en": "Elite Camel Archer (upgrade)",
+        "es": "Arquero en camello de élite (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 1000,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "567": {
+      "id": 567,
+      "internal_name": "Elite Mali Unit",
+      "names": {
+        "en": "Elite Gbeto (upgrade)",
+        "es": "Guardiana gbeto de élite (mejora)"
+      },
+      "cost": {
+        "food": 900,
+        "wood": 0,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "569": {
+      "id": 569,
+      "internal_name": "Elite Ethiopia Unit",
+      "names": {
+        "en": "Elite Shotel Warrior (upgrade)",
+        "es": "Shotelai de élite (mejora)"
+      },
+      "cost": {
+        "food": 900,
+        "wood": 0,
+        "gold": 450,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
       "tree": {
         "age": "Imperial",
         "produced_at": 82,
@@ -9520,6 +10730,50 @@
         "civ_count": 1
       }
     },
+    "597": {
+      "id": 597,
+      "internal_name": "Elite Caravel",
+      "names": {
+        "en": "Elite Caravel (upgrade)",
+        "es": "Carabela de élite (mejora)"
+      },
+      "cost": {
+        "food": 700,
+        "wood": 0,
+        "gold": 525,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 45,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "599": {
+      "id": 599,
+      "internal_name": "Elite Genitour",
+      "names": {
+        "en": "Elite Genitour (upgrade)",
+        "es": "Escaramuzador zenete de élite (mejora)"
+      },
+      "cost": {
+        "food": 500,
+        "wood": 450,
+        "gold": 0,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 87,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "602": {
       "id": 602,
       "internal_name": "Arson",
@@ -9562,6 +10816,94 @@
         "produced_at": 209,
         "requires_building": null,
         "civ_count": 30
+      }
+    },
+    "615": {
+      "id": 615,
+      "internal_name": "Elite Ballista Elephant",
+      "names": {
+        "en": "Elite Ballista Elephant (upgrade)",
+        "es": "Elefante con balista de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 70,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "617": {
+      "id": 617,
+      "internal_name": "Elite Karambit Warrior",
+      "names": {
+        "en": "Elite Karambit Warrior (upgrade)",
+        "es": "Recluta con karambit de élite (mejora)"
+      },
+      "cost": {
+        "food": 900,
+        "wood": 0,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 40,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "619": {
+      "id": 619,
+      "internal_name": "Elite Arambai",
+      "names": {
+        "en": "Elite Arambai (upgrade)",
+        "es": "Arambai de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 750,
+        "stone": 0
+      },
+      "research_time": 65,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "621": {
+      "id": 621,
+      "internal_name": "Elite Rattan Archer",
+      "names": {
+        "en": "Elite Rattan Archer (upgrade)",
+        "es": "Arquero de ratán de élite (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 0,
+        "gold": 750,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
       }
     },
     "622": {
@@ -9733,6 +11075,138 @@
       },
       "research_time": 60,
       "repeatable": true,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "631": {
+      "id": 631,
+      "internal_name": "Elite Battle Elephant",
+      "names": {
+        "en": "Elite Battle Elephant (upgrade)",
+        "es": "Elefante de combate de élite (mejora)"
+      },
+      "cost": {
+        "food": 1100,
+        "wood": 0,
+        "gold": 700,
+        "stone": 0
+      },
+      "research_time": 100,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 5
+      }
+    },
+    "655": {
+      "id": 655,
+      "internal_name": "Imperial Skirmisher",
+      "names": {
+        "en": "Imperial Skirmisher (upgrade)",
+        "es": "Hostigador imperial (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 300,
+        "gold": 300,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 87,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "678": {
+      "id": 678,
+      "internal_name": "Elite Konnik",
+      "names": {
+        "en": "Elite Konnik (upgrade)",
+        "es": "Konnik de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 750,
+        "stone": 0
+      },
+      "research_time": 70,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 1251,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "680": {
+      "id": 680,
+      "internal_name": "Elite Keshik",
+      "names": {
+        "en": "Elite Keshik (upgrade)",
+        "es": "Keshik de élite (mejora)"
+      },
+      "cost": {
+        "food": 700,
+        "wood": 0,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 40,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "682": {
+      "id": 682,
+      "internal_name": "Elite Kipchak",
+      "names": {
+        "en": "Elite Kipchak (upgrade)",
+        "es": "Kipchak de élite (mejora)"
+      },
+      "cost": {
+        "food": 1100,
+        "wood": 1000,
+        "gold": 0,
+        "stone": 0
+      },
+      "research_time": 65,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "684": {
+      "id": 684,
+      "internal_name": "Elite Leitis",
+      "names": {
+        "en": "Elite Leitis (upgrade)",
+        "es": "Leitis de élite (mejora)"
+      },
+      "cost": {
+        "food": 750,
+        "wood": 0,
+        "gold": 750,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
       "tree": {
         "age": "Imperial",
         "produced_at": 82,
@@ -9916,6 +11390,72 @@
         "civ_count": 1
       }
     },
+    "715": {
+      "id": 715,
+      "internal_name": "Elite Steppe Lancer",
+      "names": {
+        "en": "Elite Steppe Lancer (upgrade)",
+        "es": "Lancero estepario de élite (mejora)"
+      },
+      "cost": {
+        "food": 600,
+        "wood": 0,
+        "gold": 550,
+        "stone": 0
+      },
+      "research_time": 55,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 5
+      }
+    },
+    "751": {
+      "id": 751,
+      "internal_name": "Elite Coustillier",
+      "names": {
+        "en": "Elite Coustillier (upgrade)",
+        "es": "Costiller de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 800,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "753": {
+      "id": 753,
+      "internal_name": "Elite Serjeant",
+      "names": {
+        "en": "Elite Serjeant (upgrade)",
+        "es": "Serjeant de élite (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 0,
+        "gold": 675,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "754": {
       "id": 754,
       "internal_name": "Burgundian Vineyards",
@@ -10004,6 +11544,50 @@
         "civ_count": 1
       }
     },
+    "779": {
+      "id": 779,
+      "internal_name": "Elite Obuch",
+      "names": {
+        "en": "Elite Obuch (upgrade)",
+        "es": "Martillo de guerra de élite (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 0,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "781": {
+      "id": 781,
+      "internal_name": "Elite Hussite Wagon",
+      "names": {
+        "en": "Elite Hussite Wagon (upgrade)",
+        "es": "Carro de guerra husita de élite (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 800,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "782": {
       "id": 782,
       "internal_name": "Szlachta Privileges",
@@ -10081,6 +11665,116 @@
         "food": 500,
         "wood": 0,
         "gold": 450,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "786": {
+      "id": 786,
+      "internal_name": "Winged Hussar",
+      "names": {
+        "en": "Winged Hussar (upgrade)",
+        "es": "Húsar alado (mejora)"
+      },
+      "cost": {
+        "food": 600,
+        "wood": 0,
+        "gold": 800,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 2
+      }
+    },
+    "787": {
+      "id": 787,
+      "internal_name": "Houfnice",
+      "names": {
+        "en": "Houfnice (upgrade)",
+        "es": "Obús (mejora)"
+      },
+      "cost": {
+        "food": 1100,
+        "wood": 0,
+        "gold": 800,
+        "stone": 0
+      },
+      "research_time": 140,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 49,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "826": {
+      "id": 826,
+      "internal_name": "Elite Urumi Swordsman",
+      "names": {
+        "en": "Elite Urumi Swordsman (upgrade)",
+        "es": "Espadachín urumi de élite (mejora)"
+      },
+      "cost": {
+        "food": 900,
+        "wood": 0,
+        "gold": 450,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "828": {
+      "id": 828,
+      "internal_name": "Elite Ratha",
+      "names": {
+        "en": "Elite Ratha (upgrade)",
+        "es": "Ratha de élite (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 800,
+        "gold": 0,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "830": {
+      "id": 830,
+      "internal_name": "Elite Chakram Thrower",
+      "names": {
+        "en": "Elite Chakram Thrower (upgrade)",
+        "es": "Lanzador de chakrams de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 650,
         "stone": 0
       },
       "research_time": 45,
@@ -10224,6 +11918,72 @@
         "civ_count": 1
       }
     },
+    "838": {
+      "id": 838,
+      "internal_name": "Elite Armored Elephant",
+      "names": {
+        "en": "Siege Elephant (upgrade)",
+        "es": "Elefante de asedio (mejora)"
+      },
+      "cost": {
+        "food": 850,
+        "wood": 0,
+        "gold": 0,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 49,
+        "requires_building": null,
+        "civ_count": 4
+      }
+    },
+    "840": {
+      "id": 840,
+      "internal_name": "Elite Ghulam",
+      "names": {
+        "en": "Elite Ghulam (upgrade)",
+        "es": "Ghulam de élite (mejora)"
+      },
+      "cost": {
+        "food": 950,
+        "wood": 0,
+        "gold": 575,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "843": {
+      "id": 843,
+      "internal_name": "Elite Shrivamsha Rider",
+      "names": {
+        "en": "E. Shrivamsha Rider (upgrade)",
+        "es": "Jinete Shrivamsha de E. (mejora)"
+      },
+      "cost": {
+        "food": 850,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "875": {
       "id": 875,
       "internal_name": "Gambesons",
@@ -10244,6 +12004,28 @@
         "produced_at": 12,
         "requires_building": null,
         "civ_count": 25
+      }
+    },
+    "882": {
+      "id": 882,
+      "internal_name": "Elite Centurion",
+      "names": {
+        "en": "Elite Centurion (upgrade)",
+        "es": "Centurión de élite (mejora)"
+      },
+      "cost": {
+        "food": 1100,
+        "wood": 0,
+        "gold": 900,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
       }
     },
     "883": {
@@ -10290,6 +12072,28 @@
         "civ_count": 1
       }
     },
+    "885": {
+      "id": 885,
+      "internal_name": "Legionary",
+      "names": {
+        "en": "Legionary (upgrade)",
+        "es": "Legionario (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 0,
+        "gold": 400,
+        "stone": 0
+      },
+      "research_time": 100,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "902": {
       "id": 902,
       "internal_name": "Pirotecnia",
@@ -10310,6 +12114,28 @@
         "produced_at": 82,
         "requires_building": null,
         "civ_count": 1
+      }
+    },
+    "905": {
+      "id": 905,
+      "internal_name": "Demolition Ship",
+      "names": {
+        "en": "Demolition Ship (upgrade)",
+        "es": "Buque de demolición (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 25,
+        "gold": 75,
+        "stone": 0
+      },
+      "research_time": 20,
+      "repeatable": false,
+      "tree": {
+        "age": "Castle",
+        "produced_at": 45,
+        "requires_building": null,
+        "civ_count": 50
       }
     },
     "906": {
@@ -10422,6 +12248,50 @@
         "civ_count": 12
       }
     },
+    "918": {
+      "id": 918,
+      "internal_name": "Elite Composite Bowman",
+      "names": {
+        "en": "E. Composite Bowman (upgrade)",
+        "es": "Arq. con arco compuesto de E. (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 600,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "920": {
+      "id": 920,
+      "internal_name": "Elite Monaspa",
+      "names": {
+        "en": "Elite Monaspa (upgrade)",
+        "es": "Monaspa de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 700,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "921": {
       "id": 921,
       "internal_name": "Fereters",
@@ -10510,6 +12380,72 @@
         "civ_count": 1
       }
     },
+    "980": {
+      "id": 980,
+      "internal_name": "Heavy Rocket Cart",
+      "names": {
+        "en": "Heavy Rocket Cart (upgrade)",
+        "es": "Carro de cohetes pesado (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 800,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 75,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 49,
+        "requires_building": null,
+        "civ_count": 4
+      }
+    },
+    "982": {
+      "id": 982,
+      "internal_name": "Elite Fire Lancer",
+      "names": {
+        "en": "Elite Fire Lancer (upgrade)",
+        "es": "Lancero incendiario de élite (mejora)"
+      },
+      "cost": {
+        "food": 750,
+        "wood": 0,
+        "gold": 400,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 5
+      }
+    },
+    "991": {
+      "id": 991,
+      "internal_name": "Elite Iron Pagoda",
+      "names": {
+        "en": "Elite Iron Pagoda (upgrade)",
+        "es": "Pagoda de hierro de élite (mejora)"
+      },
+      "cost": {
+        "food": 950,
+        "wood": 0,
+        "gold": 550,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "996": {
       "id": 996,
       "internal_name": "Fortifed Bastions",
@@ -10546,6 +12482,28 @@
         "stone": 0
       },
       "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "1002": {
+      "id": 1002,
+      "internal_name": "Elite Liao Dao",
+      "names": {
+        "en": "Elite Liao Dao (upgrade)",
+        "es": "Liao Dao de élite (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 0,
+        "gold": 650,
+        "stone": 0
+      },
+      "research_time": 45,
       "repeatable": false,
       "tree": {
         "age": "Imperial",
@@ -10664,6 +12622,50 @@
         "civ_count": 1
       }
     },
+    "1033": {
+      "id": 1033,
+      "internal_name": "Heavy Hei-Kuang Cavalry",
+      "names": {
+        "en": "Heavy Hei Guang Cavalry (upgrade)",
+        "es": "Caballería pesada de Hei Guang (mejora)"
+      },
+      "cost": {
+        "food": 350,
+        "wood": 0,
+        "gold": 250,
+        "stone": 0
+      },
+      "research_time": 70,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 101,
+        "requires_building": null,
+        "civ_count": 3
+      }
+    },
+    "1036": {
+      "id": 1036,
+      "internal_name": "Elite Tiger Cavalry",
+      "names": {
+        "en": "Elite Tiger Cavalry (upgrade)",
+        "es": "Caballería tigresa de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 800,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "1061": {
       "id": 1061,
       "internal_name": "Tuntian",
@@ -10701,6 +12703,28 @@
       },
       "research_time": 65,
       "repeatable": true,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "1064": {
+      "id": 1064,
+      "internal_name": "Elite White Feather Guard",
+      "names": {
+        "en": "Elite White Feather Guard (upgrade)",
+        "es": "Guardia de la pluma blanca de élite (mejora)"
+      },
+      "cost": {
+        "food": 900,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
       "tree": {
         "age": "Imperial",
         "produced_at": 82,
@@ -10752,6 +12776,28 @@
         "civ_count": 1
       }
     },
+    "1074": {
+      "id": 1074,
+      "internal_name": "Elite Fire Archer",
+      "names": {
+        "en": "Elite Fire Archer (upgrade)",
+        "es": "Carro de fuego de élite (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 0,
+        "gold": 800,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "1080": {
       "id": 1080,
       "internal_name": "Red Cliffs Tactics",
@@ -10789,6 +12835,72 @@
       },
       "research_time": 40,
       "repeatable": true,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "1351": {
+      "id": 1351,
+      "internal_name": "Champi Warrior",
+      "names": {
+        "en": "Champi Warrior (upgrade)",
+        "es": "Guerrero champi (mejora)"
+      },
+      "cost": {
+        "food": 150,
+        "wood": 0,
+        "gold": 175,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Castle",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 4
+      }
+    },
+    "1352": {
+      "id": 1352,
+      "internal_name": "Elite Champi Warrior",
+      "names": {
+        "en": "Elite Champi Warrior (upgrade)",
+        "es": "Guerrero champi de élite (mejora)"
+      },
+      "cost": {
+        "food": 650,
+        "wood": 0,
+        "gold": 450,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 4
+      }
+    },
+    "1364": {
+      "id": 1364,
+      "internal_name": "Guecha Warrior Pagoda",
+      "names": {
+        "en": "Elite Guecha Warrior (upgrade)",
+        "es": "Guerrero guecha de élite (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 750,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
       "tree": {
         "age": "Imperial",
         "produced_at": 82,
@@ -10840,6 +12952,50 @@
         "civ_count": 1
       }
     },
+    "1376": {
+      "id": 1376,
+      "internal_name": "Elite Kona",
+      "names": {
+        "en": "Elite Kona (upgrade)",
+        "es": "Kona de élite (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 0,
+        "gold": 800,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "1378": {
+      "id": 1378,
+      "internal_name": "Elite Bolas Rider",
+      "names": {
+        "en": "Elite Bolas Rider (upgrade)",
+        "es": "Jinete con boleadoras de élite (mejora)"
+      },
+      "cost": {
+        "food": 800,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 87,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "1379": {
       "id": 1379,
       "internal_name": "Malon",
@@ -10880,6 +13036,50 @@
       "tree": {
         "age": "Imperial",
         "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "1389": {
+      "id": 1389,
+      "internal_name": "Elite Blackwood Archer",
+      "names": {
+        "en": "Elite Blackwood Archer (upgrade)",
+        "es": "Arquero de los bosques de élite (mejora)"
+      },
+      "cost": {
+        "food": 600,
+        "wood": 0,
+        "gold": 500,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "1391": {
+      "id": 1391,
+      "internal_name": "Elite Ibirapema Warrior",
+      "names": {
+        "en": "Elite Ibirapema Warrior (upgrade)",
+        "es": "Guerrero ibirapema de élite (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 600,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 12,
         "requires_building": null,
         "civ_count": 1
       }
@@ -10928,6 +13128,50 @@
         "civ_count": 1
       }
     },
+    "1401": {
+      "id": 1401,
+      "internal_name": "Elite Temple Guard",
+      "names": {
+        "en": "Elite Temple Guard (upgrade)",
+        "es": "Guardia del templo de élite (mejora)"
+      },
+      "cost": {
+        "food": 500,
+        "wood": 0,
+        "gold": 650,
+        "stone": 0
+      },
+      "research_time": 60,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 2
+      }
+    },
+    "1402": {
+      "id": 1402,
+      "internal_name": "Champi Runner",
+      "names": {
+        "en": "Champi Runner (upgrade)",
+        "es": "Corredor champi (mejora)"
+      },
+      "cost": {
+        "food": 90,
+        "wood": 0,
+        "gold": 60,
+        "stone": 0
+      },
+      "research_time": 40,
+      "repeatable": false,
+      "tree": {
+        "age": "Feudal",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 4
+      }
+    },
     "1404": {
       "id": 1404,
       "internal_name": "Circumnavigation",
@@ -10948,6 +13192,28 @@
         "produced_at": 82,
         "requires_building": null,
         "civ_count": 1
+      }
+    },
+    "1451": {
+      "id": 1451,
+      "internal_name": "Heavy Mounted Crossbowman",
+      "names": {
+        "en": "H. Mounted Crossbowman (upgrade)",
+        "es": "Ballestero m. pesado (mejora)"
+      },
+      "cost": {
+        "food": 1000,
+        "wood": 0,
+        "gold": 650,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 87,
+        "requires_building": null,
+        "civ_count": 10
       }
     },
     "1452": {
@@ -10972,6 +13238,50 @@
         "civ_count": 6
       }
     },
+    "1454": {
+      "id": 1454,
+      "internal_name": "Elite Varangian Guard",
+      "names": {
+        "en": "E. Varangian Guard (upgrade)",
+        "es": "G. varego de élite (mejora)"
+      },
+      "cost": {
+        "food": 750,
+        "wood": 0,
+        "gold": 475,
+        "stone": 0
+      },
+      "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 12,
+        "requires_building": null,
+        "civ_count": 5
+      }
+    },
+    "1462": {
+      "id": 1462,
+      "internal_name": "Elite Hearth Troop",
+      "names": {
+        "en": "Elite Hearth Troop (upgrade)",
+        "es": "Tropas del hogar de élite (mejora)"
+      },
+      "cost": {
+        "food": 0,
+        "wood": 750,
+        "gold": 700,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
     "1464": {
       "id": 1464,
       "internal_name": "Shield Wall",
@@ -10983,6 +13293,28 @@
         "food": 525,
         "wood": 0,
         "gold": 475,
+        "stone": 0
+      },
+      "research_time": 45,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "1472": {
+      "id": 1472,
+      "internal_name": "Elite Jarl",
+      "names": {
+        "en": "Elite Jarl (upgrade)",
+        "es": "Jarl de élite (mejora)"
+      },
+      "cost": {
+        "food": 825,
+        "wood": 0,
+        "gold": 725,
         "stone": 0
       },
       "research_time": 45,
@@ -11030,6 +13362,28 @@
         "stone": 0
       },
       "research_time": 50,
+      "repeatable": false,
+      "tree": {
+        "age": "Imperial",
+        "produced_at": 82,
+        "requires_building": null,
+        "civ_count": 1
+      }
+    },
+    "1482": {
+      "id": 1482,
+      "internal_name": "Elite Jomsviking ",
+      "names": {
+        "en": "Elite Jomsviking (upgrade)",
+        "es": "Vikingo de Jomsborg de élite (mejora)"
+      },
+      "cost": {
+        "food": 825,
+        "wood": 0,
+        "gold": 825,
+        "stone": 0
+      },
+      "research_time": 45,
       "repeatable": false,
       "tree": {
         "age": "Imperial",
@@ -11126,5 +13480,127 @@
         "civ_count": 1
       }
     }
+  },
+  "unit_upgrades": {
+    "6": 98,
+    "21": 34,
+    "24": 100,
+    "75": 222,
+    "77": 207,
+    "207": 521,
+    "283": 209,
+    "330": 236,
+    "358": 197,
+    "359": 429,
+    "422": 96,
+    "441": 428,
+    "442": 35,
+    "473": 217,
+    "474": 218,
+    "492": 237,
+    "527": 905,
+    "528": 244,
+    "529": 34,
+    "530": 360,
+    "531": 363,
+    "532": 35,
+    "533": 372,
+    "534": 370,
+    "542": 239,
+    "546": 254,
+    "548": 255,
+    "550": 257,
+    "553": 361,
+    "554": 364,
+    "555": 365,
+    "556": 368,
+    "557": 369,
+    "558": 367,
+    "559": 362,
+    "560": 366,
+    "561": 371,
+    "567": 264,
+    "569": 265,
+    "588": 320,
+    "691": 376,
+    "694": 398,
+    "726": 432,
+    "752": 434,
+    "753": 384,
+    "757": 2,
+    "761": 365,
+    "765": 27,
+    "773": 60,
+    "829": 450,
+    "832": 448,
+    "868": 468,
+    "871": 472,
+    "875": 481,
+    "878": 504,
+    "881": 509,
+    "887": 2,
+    "1003": 563,
+    "1006": 597,
+    "1009": 565,
+    "1012": 599,
+    "1015": 567,
+    "1018": 569,
+    "1122": 615,
+    "1125": 617,
+    "1128": 619,
+    "1131": 621,
+    "1134": 631,
+    "1155": 655,
+    "1227": 678,
+    "1230": 680,
+    "1233": 682,
+    "1236": 684,
+    "1255": 678,
+    "1302": 35,
+    "1372": 715,
+    "1657": 751,
+    "1659": 753,
+    "1661": 753,
+    "1703": 779,
+    "1706": 781,
+    "1707": 786,
+    "1709": 787,
+    "1737": 826,
+    "1743": 830,
+    "1746": 838,
+    "1749": 840,
+    "1753": 843,
+    "1761": 828,
+    "1787": 197,
+    "1788": 429,
+    "1792": 882,
+    "1793": 885,
+    "1802": 918,
+    "1805": 920,
+    "1813": 526,
+    "1903": 982,
+    "1907": 980,
+    "1910": 991,
+    "1922": 1002,
+    "1946": 1033,
+    "1951": 1036,
+    "1961": 1064,
+    "1970": 1074,
+    "2552": 1351,
+    "2554": 1352,
+    "2564": 1364,
+    "2568": 1376,
+    "2571": 1378,
+    "2581": 1389,
+    "2584": 1391,
+    "2587": 1401,
+    "2588": 1402,
+    "2627": 34,
+    "2628": 35,
+    "2701": 1451,
+    "2704": 1454,
+    "2706": 1462,
+    "2709": 1472,
+    "2712": 1482
   }
 }

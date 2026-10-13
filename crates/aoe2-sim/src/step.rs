@@ -24,7 +24,8 @@ pub struct Sim<'a> {
     /// Si es true, los aldeanos sin asignación en la orden esperan una
     /// decisión externa (el optimizador) en lugar de ir al pool por defecto.
     external: bool,
-    decision: Option<u32>,
+    /// Aldeanos que esperan decisión externa, en orden.
+    decisions: std::collections::VecDeque<u32>,
     born_before_tick: u32,
     max_villagers: Option<u32>,
     builders_pool: usize,
@@ -106,7 +107,7 @@ impl<'a> Sim<'a> {
             if known_pool(name) { Ok(()) } else { Err(format!("pool desconocido en la orden: {name}")) }
         };
         let check_building = |name: &str| -> Result<u32, String> {
-            sc.rules.building_id(name).ok_or(format!("edificio desconocido en la orden: {name}"))
+            sc.building_ref(name).ok_or(format!("edificio desconocido en la orden: {name}"))
         };
         check_pool(&order.default_pool)?;
         for a in order.start.iter().map(|s| &s.assign).chain(order.villagers.iter().map(|v| &v.assign)) {
@@ -129,14 +130,14 @@ impl<'a> Sim<'a> {
                     }
                 }
                 StepAction::Research(t) => {
-                    sc.rules.tech_id(t).ok_or(format!("tecnología desconocida en la orden: {t}"))?;
+                    sc.tech_ref(t).ok_or(format!("tecnología desconocida en la orden: {t}"))?;
                 }
                 StepAction::Move { from, to, .. } => {
                     check_pool(from)?;
                     check_pool(to)?;
                 }
                 StepAction::Train { unit, .. } => {
-                    sc.rules.unit_id(unit).ok_or(format!("unidad desconocida en la orden: {unit}"))?;
+                    sc.unit_ref(unit).ok_or(format!("unidad desconocida en la orden: {unit}"))?;
                 }
                 StepAction::Lure { source, from } => {
                     check_pool(from)?;
@@ -154,7 +155,7 @@ impl<'a> Sim<'a> {
                 check_building(b)?;
             }
             if let Some(t) = &c.researched {
-                sc.rules.tech_id(t).ok_or(format!("tecnología desconocida en la orden: {t}"))?;
+                sc.tech_ref(t).ok_or(format!("tecnología desconocida en la orden: {t}"))?;
             }
         }
 
@@ -166,10 +167,10 @@ impl<'a> Sim<'a> {
             check_pool(b)?;
         }
         for t in &auto.research {
-            sc.rules.tech_id(t).ok_or(format!("tecnología desconocida en auto.research: {t}"))?;
+            sc.tech_ref(t).ok_or(format!("tecnología desconocida en auto.research: {t}"))?;
         }
         if let Some(p) = &auto.production {
-            sc.rules.unit_id(&p.unit).ok_or(format!("unidad desconocida en auto.production: {}", p.unit))?;
+            sc.unit_ref(&p.unit).ok_or(format!("unidad desconocida en auto.production: {}", p.unit))?;
         }
         let builders_pool = pools.iter().position(|p| p == builders_name).unwrap();
         let fallback = auto
@@ -185,12 +186,12 @@ impl<'a> Sim<'a> {
         let train_orders = auto
             .production
             .iter()
-            .map(|p| (sc.rules.unit_id(&p.unit).unwrap(), p.count))
+            .map(|p| (sc.unit_ref(&p.unit).unwrap(), p.count))
             .collect();
         let mut sim = Sim {
             sc,
             external: false,
-            decision: None,
+            decisions: Default::default(),
             born_before_tick: 0,
             max_villagers: order.max_villagers,
             builders_pool,
@@ -250,11 +251,25 @@ impl<'a> Sim<'a> {
                 let p = sim.pool(a.pool.as_deref().unwrap());
                 for id in ids {
                     let vi = sim.vidx(id);
-                    sim.state.villagers[vi].pool = p;
+                    sim.assign_pool(vi, p);
                 }
                 continue;
             };
-            let b = sc.rules.building_id(name).unwrap();
+            if let Some(n) = a.builders {
+                // Con nº de constructores: se coloca en el primer segundo, como
+                // una decisión (este aldeano + ayudantes).
+                let b = sc.building_ref(name).unwrap();
+                let at = a.at.as_deref().map(|p| sim.pool(p));
+                let then = sim.pool(a.then.as_deref().unwrap());
+                for &id in &ids {
+                    let vi = sim.vidx(id);
+                    sim.state.villagers[vi].pool = then;
+                    sim.state.villagers[vi].activity =
+                        Activity::WaitBuild { building: b, at, helpers: n.saturating_sub(1).min(255) as u8 };
+                }
+                continue;
+            }
+            let b = sc.building_ref(name).unwrap();
             let then = sim.pool(a.then.as_deref().unwrap());
             let at = a.at.as_deref().map(|p| sim.pool(p));
             let cost = sim.building_cost(b);
@@ -269,7 +284,7 @@ impl<'a> Sim<'a> {
                 sim.state.villagers[vi].pool = then;
                 match site {
                     Some(site) => sim.send_to_site(vi, site, sc.map.build_walk(name)),
-                    None => sim.state.villagers[vi].activity = Activity::WaitBuild { building: b, at },
+                    None => sim.state.villagers[vi].activity = Activity::WaitBuild { building: b, at, helpers: 0 },
                 }
             }
             if let Some(site) = site {
@@ -300,6 +315,12 @@ impl<'a> Sim<'a> {
     pub fn new_external(sc: &'a Scenario) -> Result<Sim<'a>, String> {
         let mut sim = Sim::new(sc)?;
         sim.external = true;
+        // Si la orden no dice qué hacen los aldeanos iniciales, también se
+        // deciden desde fuera (en el segundo 0).
+        let assigned: u32 = sc.order.start.iter().map(|s| s.villagers).sum();
+        for v in sim.state.villagers.iter().skip(assigned as usize) {
+            sim.decisions.push_back(v.id);
+        }
         Ok(sim)
     }
 
@@ -310,26 +331,53 @@ impl<'a> Sim<'a> {
         if self.ticks.is_empty() {
             self.snapshot();
         }
-        while self.decision.is_none() && self.state.time < max_seconds && !done(&self.state) {
+        while self.decisions.is_empty() && self.state.time < max_seconds && !done(&self.state) {
             self.tick();
         }
-        self.decision
+        self.decisions.front().copied()
     }
 
     /// Asigna el aldeano que esperaba decisión a un pool (aplica las reglas
     /// automáticas, como construir antes su punto de entrega).
     pub fn decide(&mut self, pool: &str) {
-        let id = self.decision.take().expect("no hay decisión pendiente");
+        let id = self.decisions.pop_front().expect("no hay decisión pendiente");
         let vi = self.vidx(id);
         let p = self.pool(pool);
         self.assign_pool(vi, p);
         self.events.push(TimedEvent { time: self.state.time, event: Event::Decision { villager: id, choice: pool.to_owned() } });
     }
 
+    /// Como `decide`, pero el aldeano primero construye `building` con
+    /// `builders` constructores en total y después va a `pool`.
+    pub fn decide_build(&mut self, building: &str, builders: u32, pool: &str) {
+        let id = self.decisions.pop_front().expect("no hay decisión pendiente");
+        let vi = self.vidx(id);
+        let b = self.sc.building_ref(building).expect("edificio conocido");
+        self.state.villagers[vi].pool = self.pool(pool);
+        self.state.villagers[vi].activity =
+            Activity::WaitBuild { building: b, at: None, helpers: builders.saturating_sub(1).min(255) as u8 };
+        let choice = format!("{building} → {pool}");
+        self.events.push(TimedEvent { time: self.state.time, event: Event::Decision { villager: id, choice } });
+    }
+
+    /// ¿Se puede construir ya `building` por edad? (no mira recursos)
+    pub fn can_build(&self, building: &str) -> bool {
+        self.sc.building_ref(building).is_some_and(|b| self.building_available(b))
+    }
+
+    /// Edificios de este tipo terminados o en obra (incluye los iniciales).
+    pub fn planned(&self, building: &str) -> usize {
+        self.sc.building_ref(building).map_or(0, |b| self.state.count_planned(b))
+    }
+
+    pub fn pop_capacity(&self) -> u32 {
+        self.pop_cap()
+    }
+
     /// Pide una investigación (p. ej. el clic de edad) desde fuera. Con
     /// `soft`, el CU sigue creando aldeanos hasta que se pueda investigar.
     pub fn queue_research(&mut self, tech: &str, soft: bool) {
-        let id = self.sc.rules.tech_id(tech).expect("tecnología conocida");
+        let id = self.sc.tech_ref(tech).expect("tecnología conocida");
         if !self.state.pending_research.contains(&id) && !self.state.has_tech(id) {
             self.state.pending_research.push(id);
             if soft {
@@ -353,7 +401,7 @@ impl<'a> Sim<'a> {
     }
 
     pub fn pending_decision(&self) -> Option<u32> {
-        self.decision
+        self.decisions.front().copied()
     }
 
     pub fn pool_names(&self) -> &[String] {
@@ -554,7 +602,7 @@ impl<'a> Sim<'a> {
         let n_before = self.born_before_tick;
         for vi in 0..self.state.villagers.len() {
             let id = self.state.villagers[vi].id;
-            if id >= n_before && id < born {
+            if (id >= n_before && id < born) || self.decisions.contains(&id) {
                 continue;
             }
             self.act(vi);
@@ -574,8 +622,8 @@ impl<'a> Sim<'a> {
             && c.pop.is_none_or(|p| s.pop() >= p)
             && c.villagers.is_none_or(|n| s.villagers.len() as u32 >= n)
             && c.age.is_none_or(|a| s.age >= a)
-            && c.researched.as_deref().is_none_or(|t| s.has_tech(self.sc.rules.tech_id(t).unwrap()))
-            && c.built.as_deref().is_none_or(|b| s.count_built(self.sc.rules.building_id(b).unwrap()) > 0)
+            && c.researched.as_deref().is_none_or(|t| s.has_tech(self.sc.tech_ref(t).unwrap()))
+            && c.built.as_deref().is_none_or(|b| s.count_built(self.sc.building_ref(b).unwrap()) > 0)
             && c.pool_exhausted.as_deref().is_none_or(|p| self.pool_exhausted(self.pool(p)))
     }
 
@@ -590,7 +638,7 @@ impl<'a> Sim<'a> {
             let step = &self.sc.order.steps[i];
             match step.action().expect("validado") {
                 StepAction::Research(t) => {
-                    let tech = self.sc.rules.tech_id(t).unwrap();
+                    let tech = self.sc.tech_ref(t).unwrap();
                     self.state.pending_research.push(tech);
                     if step.soft {
                         self.state.soft_research.push(tech);
@@ -645,7 +693,7 @@ impl<'a> Sim<'a> {
                     self.steps[i] = StepState::Done;
                 }
                 StepAction::Build { building, builders, from, then, at } => {
-                    let b = self.sc.rules.building_id(building).unwrap();
+                    let b = self.sc.building_ref(building).unwrap();
                     let (from, then) = (self.pool(from), self.pool(then));
                     let at = at.map(|p| self.pool(p));
                     if self.place_building(b, builders, from, Some(then), at, false) {
@@ -653,7 +701,7 @@ impl<'a> Sim<'a> {
                     }
                 }
                 StepAction::Train { unit, count } => {
-                    let u = self.sc.rules.unit_id(unit).unwrap();
+                    let u = self.sc.unit_ref(unit).unwrap();
                     self.state.train_orders.push((u, count));
                     self.steps[i] = StepState::Done;
                 }
@@ -677,7 +725,7 @@ impl<'a> Sim<'a> {
             return false;
         }
         let free = |v: &Villager| {
-            !v.activity.is_building() && !matches!(v.activity, Activity::Luring { .. }) && Some(v.id) != self.decision
+            !v.activity.is_building() && !matches!(v.activity, Activity::Luring { .. }) && !self.decisions.contains(&v.id)
         };
         let forced = self.builder_overrides.get(&self.placements).copied();
         let wanted = forced.unwrap_or(builders).max(1) as usize;
@@ -719,6 +767,36 @@ impl<'a> Sim<'a> {
         true
     }
 
+    /// Manda `n` ayudantes del pool de constructores (o de cualquier pool si no
+    /// hay) a una obra; vuelven a su tarea al terminar. Devuelve sus ids.
+    fn add_helpers(&mut self, site: usize, n: usize) -> Vec<u32> {
+        let name = self.building_name(self.state.sites[site].building);
+        let walk = self.sc.map.build_walk(&name);
+        let from = self.builders_pool;
+        let free = |v: &Villager| {
+            !v.activity.is_building() && !matches!(v.activity, Activity::Luring { .. }) && !self.decisions.contains(&v.id)
+        };
+        let mut chosen: Vec<usize> = (0..self.state.villagers.len())
+            .rev()
+            .filter(|&vi| self.state.villagers[vi].pool == from && free(&self.state.villagers[vi]))
+            .take(n)
+            .collect();
+        for vi in (0..self.state.villagers.len()).rev() {
+            if chosen.len() >= n {
+                break;
+            }
+            if !chosen.contains(&vi) && free(&self.state.villagers[vi]) {
+                chosen.push(vi);
+            }
+        }
+        let mut ids = Vec::new();
+        for vi in chosen {
+            self.send_to_site(vi, site, walk);
+            ids.push(self.state.villagers[vi].id);
+        }
+        ids
+    }
+
     /// Con hipótesis de constructores, suma ayudantes a una obra recién colocada.
     fn add_forced_helpers(&mut self, site: usize, already: usize) {
         let placement = self.state.sites[site].placement;
@@ -731,7 +809,7 @@ impl<'a> Sim<'a> {
                 break;
             }
             let v = &self.state.villagers[vi];
-            if !v.activity.is_building() && !matches!(v.activity, Activity::Luring { .. }) && Some(v.id) != self.decision {
+            if !v.activity.is_building() && !matches!(v.activity, Activity::Luring { .. }) && !self.decisions.contains(&v.id) {
                 self.send_to_site(vi, site, walk);
                 added += 1;
             }
@@ -776,11 +854,22 @@ impl<'a> Sim<'a> {
                 self.place_building(ids::HOUSE, builders, from, None, None, true);
             }
         }
-        // Puntos de entrega pendientes: colocarlos cuando alcance.
+        // Puntos de entrega pendientes: colocarlos cuando alcance, sin gastar
+        // la madera de una casa que hace falta pronto (el CU no debe quedarse
+        // sin población por un campamento).
+        let house_soon = auto.houses.is_some() && {
+            let p = &self.sc.rules.population;
+            let in_progress = self.state.sites.iter().filter(|s| s.building == ids::HOUSE && !s.done).count() as u32;
+            let room = self.pop_cap() + in_progress * p.per_house;
+            let pop = self.state.pop() + self.state.tcs.len() as u32 + self.state.training.len() as u32;
+            room < p.max && room.saturating_sub(pop) <= auto.houses.unwrap_or(0)
+        };
+        let house_wood = if house_soon { self.building_cost(ids::HOUSE).wood as f64 } else { 0.0 };
         let mut i = 0;
         while i < self.pending_drop_sites.len() {
             let (b, pool) = self.pending_drop_sites[i];
-            if self.place_building(b, 1, pool, None, Some(pool), false) {
+            let after = self.state.res.wood - self.building_cost(b).wood as f64;
+            if after + EPS >= house_wood && self.place_building(b, 1, pool, None, Some(pool), false) {
                 self.pending_drop_sites.remove(i);
             } else {
                 i += 1;
@@ -822,9 +911,19 @@ impl<'a> Sim<'a> {
                 }
             }
         }
-        // Tecnologías automáticas: pedirlas en cuanto la edad lo permita.
-        for name in auto.research.clone() {
-            let tech = self.sc.rules.tech_id(&name).unwrap();
+        // Tecnologías automáticas (con sus previas y la mejora de la unidad que
+        // se produce): pedirlas en cuanto la edad lo permita.
+        let mut wanted: Vec<u32> = Vec::new();
+        for name in &auto.research {
+            wanted.extend(self.sc.tech_chain(self.sc.tech_ref(name).unwrap()));
+        }
+        if let Some(prod) = &auto.production {
+            let unit = self.sc.unit_ref(&prod.unit).unwrap();
+            if let Some(&up) = self.sc.data.unit_upgrades.get(&unit) {
+                wanted.extend(self.sc.tech_chain(up));
+            }
+        }
+        for tech in wanted {
             if self.state.has_tech(tech)
                 || self.state.pending_research.contains(&tech)
                 || self.state.research.iter().any(|r| r.job == Job::Research(tech))
@@ -833,7 +932,12 @@ impl<'a> Sim<'a> {
                 continue;
             }
             let age_ok = self.sc.data.tech(tech).and_then(|t| t.tree.as_ref()).is_none_or(|t| t.age <= self.state.age);
-            if age_ok {
+            let prev_ok = self
+                .sc
+                .rules
+                .tech_prerequisite(tech)
+                .is_none_or(|p| self.state.has_tech(p) || self.state.pending_research.contains(&p) || self.state.research.iter().any(|r| r.job == Job::Research(p)));
+            if age_ok && prev_ok {
                 let b = self.research_building(tech);
                 if b == ids::TOWN_CENTER || self.ensure_building(b) {
                     self.state.pending_research.push(tech);
@@ -842,7 +946,7 @@ impl<'a> Sim<'a> {
         }
         // Producción: mantener los edificios productores.
         if let Some(prod) = auto.production.clone() {
-            let unit = self.sc.rules.unit_id(&prod.unit).unwrap();
+            let unit = self.sc.unit_ref(&prod.unit).unwrap();
             if let Some(b) = self.sc.data.unit(unit).and_then(|u| u.tree.as_ref()).and_then(|t| t.produced_at) {
                 if self.building_available(b) && self.ensure_prerequisites(b) {
                     if (self.state.count_planned(b) as u32) < prod.buildings {
@@ -918,6 +1022,9 @@ impl<'a> Sim<'a> {
             if u.tree.as_ref().is_some_and(|t| t.age > self.state.age) {
                 continue;
             }
+            if self.sc.data.unit_upgrades.get(&unit).is_some_and(|t| !self.state.has_tech(*t)) {
+                continue; // falta investigar la mejora (p. ej. Ballestero)
+            }
             let busy = self.state.training.iter().filter(|r| r.building == b).count();
             let mut free = self.state.count_built(b).saturating_sub(busy);
             let mut left = left;
@@ -952,11 +1059,7 @@ impl<'a> Sim<'a> {
     }
 
     fn building_available(&self, b: u32) -> bool {
-        self.sc
-            .data
-            .building(b)
-            .and_then(|b| b.tree.as_ref())
-            .is_none_or(|t| t.age <= self.state.age)
+        self.sc.building_age(b) <= self.state.age
     }
 
     /// ¿Se puede empezar a investigar `tech` ya? (sin mirar recursos)
@@ -966,6 +1069,9 @@ impl<'a> Sim<'a> {
             return false;
         }
         if t.tree.as_ref().is_some_and(|tr| tr.age > self.state.age) {
+            return false;
+        }
+        if self.sc.rules.tech_prerequisite(tech).is_some_and(|p| !self.state.has_tech(p)) {
             return false;
         }
         if let Some(req) = self.sc.rules.age_requirement(tech) {
@@ -1122,10 +1228,11 @@ impl<'a> Sim<'a> {
                 let assign = self.sc.order.assignment_for(id).cloned();
                 let label = match &assign {
                     Some(a) if a.build.is_some() => {
-                        let b = self.sc.rules.building_id(a.build.as_deref().unwrap()).unwrap();
+                        let b = self.sc.building_ref(a.build.as_deref().unwrap()).unwrap();
                         let at = a.at.as_deref().map(|p| self.pool(p));
                         self.state.villagers[vi].pool = self.pool(a.then.as_deref().unwrap());
-                        self.state.villagers[vi].activity = Activity::WaitBuild { building: b, at };
+                        let helpers = a.builders.unwrap_or(1).saturating_sub(1).min(255) as u8;
+                        self.state.villagers[vi].activity = Activity::WaitBuild { building: b, at, helpers };
                         format!("{} → {}", a.build.as_deref().unwrap(), a.then.as_deref().unwrap())
                     }
                     Some(a) => {
@@ -1134,7 +1241,7 @@ impl<'a> Sim<'a> {
                         a.pool.clone().unwrap()
                     }
                     None if self.external => {
-                        self.decision = Some(id);
+                        self.decisions.push_back(id);
                         "?".to_owned()
                     }
                     None => {
@@ -1248,7 +1355,7 @@ impl<'a> Sim<'a> {
             }
         }
         let had_farm = v.farm.is_some();
-        let farm = self.sc.rules.building_id("farm").unwrap_or(ids::FARM);
+        let farm = self.sc.building_ref("farm").unwrap_or(ids::FARM);
         let cost = self.building_cost(farm);
         if !self.state.res.can_afford(&cost) || (had_farm && !self.sc.rules.farm.auto_reseed) {
             return None;
@@ -1283,7 +1390,7 @@ impl<'a> Sim<'a> {
                         break;
                     }
                 },
-                Activity::WaitBuild { building, at } => {
+                Activity::WaitBuild { building, at, helpers } => {
                     if self.building_available(building) && self.state.res.can_afford(&self.building_cost(building)) {
                         let cost = self.building_cost(building);
                         let name = self.building_name(building);
@@ -1291,8 +1398,11 @@ impl<'a> Sim<'a> {
                         let site = self.new_site(building, None, at);
                         let id = self.state.villagers[vi].id;
                         let placement = self.state.sites[site].placement;
-                        self.event(Event::BuildStarted { building: name.clone(), builders: vec![id], placement });
-                        self.add_forced_helpers(site, 1);
+                        let extra = self.add_helpers(site, helpers as usize);
+                        let mut builders = vec![id];
+                        builders.extend(extra);
+                        self.event(Event::BuildStarted { building: name.clone(), builders, placement });
+                        self.add_forced_helpers(site, 1 + helpers as usize);
                         let left = self.sc.map.build_walk(&name) / self.speed();
                         Activity::ToSite { site, left }
                     } else {
@@ -1586,10 +1696,9 @@ impl<'a> Sim<'a> {
 
     /// Qué hace cada aldeano ahora; publica un `TaskChanged` cuando cambia.
     fn track_tasks(&mut self) {
-        let born_now = self.born_before_tick;
         for vi in 0..self.state.villagers.len() {
             let v = &self.state.villagers[vi];
-            if v.id >= born_now && Some(v.id) == self.decision {
+            if self.decisions.contains(&v.id) {
                 continue; // espera la decisión del optimizador
             }
             let task = match v.activity {

@@ -3,7 +3,7 @@
 
 use crate::goal::Goal;
 use aoe2_data::Age;
-use aoe2_sim::orders::{Auto, BuildOrder, Condition, Production, StartAssign, Step, VillagerAssign, Assign};
+use aoe2_sim::orders::{Assign, Auto, BuildOrder, Condition, Production, Step, VillagerAssign};
 use aoe2_sim::state::GameState;
 use aoe2_sim::{Scenario, Sim, Snapshot, Timeline};
 use serde::Serialize;
@@ -43,6 +43,22 @@ pub struct Choice {
     /// Clic "duro": el CU para y ahorra para la edad (si el objetivo lo permite).
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub hard: bool,
+    /// Antes de ir a `pool`, construir este edificio…
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub build: Option<String>,
+    /// …con este número de constructores en total.
+    #[serde(skip_serializing_if = "is_zero")]
+    pub builders: u32,
+}
+
+fn is_zero(n: &u32) -> bool {
+    *n == 0
+}
+
+impl Choice {
+    pub fn gather(pool: &str) -> Choice {
+        Choice { pool: pool.to_owned(), click: None, stop: false, hard: false, build: None, builders: 0 }
+    }
 }
 
 /// Una decisión ya tomada, con el momento y el aldeano.
@@ -141,11 +157,13 @@ pub struct Policy {
     pub stop_at: Option<u32>,
     /// Clics duros (parar el CU para ahorrar).
     pub hard_clicks: bool,
+    /// CU adicionales a construir en cuanto se pueda.
+    pub extra_tcs: u32,
 }
 
 impl Default for Policy {
     fn default() -> Self {
-        Policy { click_at: [21, 24, 32], food_reserve: 2.0, stop_at: None, hard_clicks: false }
+        Policy { click_at: [21, 24, 32], food_reserve: 2.0, stop_at: None, hard_clicks: false, extra_tcs: 0 }
     }
 }
 
@@ -179,17 +197,14 @@ pub fn policy_order(base: &Scenario, goal: &Goal) -> BuildOrder {
             _ => {}
         }
     }
-    let first_food = food_pools.first().cloned().unwrap_or_else(|| "forest".to_owned());
     let target = goal.target_age(base);
     BuildOrder {
         name: format!("IdleZero · {}", goal.id),
         map: base.map.name.clone(),
         default_pool: "forest".to_owned(),
         max_villagers: None,
-        start: vec![StartAssign {
-            villagers: base.map.start.villagers,
-            assign: Assign { pool: Some(first_food), build: None, then: None, at: None },
-        }],
+        // Los iniciales también los decide el optimizador (en el segundo 0).
+        start: Vec::new(),
         villagers: Vec::new(),
         steps: Vec::new(),
         auto: Auto {
@@ -302,10 +317,33 @@ impl<'a> Optimizer<'a> {
                         if hard && c.is_none() {
                             continue;
                         }
-                        out.push(Choice { pool: p.clone(), click: c.clone(), stop, hard });
+                        out.push(Choice { click: c.clone(), stop, hard, ..Choice::gather(p) });
                     }
                 }
             }
+        }
+        // Construir antes de ir a trabajar (la "izquierda" del árbol).
+        for (b, n) in self.build_options(sim) {
+            out.push(Choice { build: Some(b.to_owned()), builders: n, ..Choice::gather("forest") });
+        }
+        out
+    }
+
+    /// Construcciones que vale la pena proponer en esta decisión.
+    fn build_options(&self, sim: &Sim) -> Vec<(&'static str, u32)> {
+        let s = &sim.state;
+        let mut out = Vec::new();
+        let houses_building = s.sites.iter().filter(|x| x.building == aoe2_data::ids::HOUSE && !x.done).count() as u32;
+        let room = sim.pop_capacity() + houses_building * self.sc.rules.population.per_house;
+        let pop = s.pop() + s.tcs.len() as u32;
+        if room < self.sc.rules.population.max && room.saturating_sub(pop) <= 3 {
+            out.push(("house", 1));
+            out.push(("house", 2));
+        }
+        let boom = self.goal.villagers.is_some() || !self.goal.units.is_empty();
+        if boom && sim.can_build("town_center") && sim.planned("town_center") < 3 {
+            out.push(("town_center", 3));
+            out.push(("town_center", 5));
         }
         out
     }
@@ -318,7 +356,10 @@ impl<'a> Optimizer<'a> {
         if let Some(t) = &c.click {
             sim.queue_research(t, !c.hard);
         }
-        sim.decide(&c.pool);
+        match &c.build {
+            Some(b) => sim.decide_build(b, c.builders.max(1), &c.pool),
+            None => sim.decide(&c.pool),
+        }
     }
 
     /// Tiempo estimado para cumplir el objetivo desde este estado.
@@ -400,7 +441,7 @@ impl<'a> Optimizer<'a> {
         }
         let mut est = s.time as f64 + t + ages_after + penalty;
         for u in &self.goal.units {
-            let id = self.sc.rules.unit_id(&u.unit).unwrap();
+            let id = self.sc.unit_ref(&u.unit).unwrap();
             let left = u.count.saturating_sub(s.units_of(id));
             let train = self.sc.data.unit(id).unwrap().train_time as f64;
             est += (left as f64 / 2.0).ceil() * train * 0.5;
@@ -501,12 +542,10 @@ impl<'a> Optimizer<'a> {
             if sim.pending_decision().is_some() { sim.pending_decision() } else { sim.advance(self.cfg.max_seconds, &done) }
         };
         while let Some(v) = advance(&mut sim) {
-            let c = choices.get(i).cloned().unwrap_or_else(|| Choice {
-                pool: choices.last().map_or("forest".to_owned(), |c| c.pool.clone()),
-                click: None,
-                stop: false,
-                hard: false,
-            });
+            let c = choices
+                .get(i)
+                .cloned()
+                .unwrap_or_else(|| Choice::gather(&choices.last().map_or("forest".to_owned(), |c| c.pool.clone())));
             if record {
                 checkpoints.push(sim.clone());
                 decisions.push(Decision { villager: v, time: sim.state.time, choice: c.clone(), state: sim.current_snapshot() });
@@ -544,7 +583,7 @@ impl<'a> Optimizer<'a> {
     /// recurso; clic suave al llegar a `click_at` aldeanos.
     fn greedy(&self, sim: &Sim, p: &Policy) -> Choice {
         let s = &sim.state;
-        let need = self.goal.remaining_cost(&self.sc, s);
+        let need = self.goal.stage_cost(&self.sc, s);
         let v = self.sc.data.unit(aoe2_data::ids::VILLAGER).unwrap();
         let making = sim.max_villagers().is_none_or(|m| (s.villagers.len() as u32) < m);
         let reserve = if making { p.food_reserve * v.cost.food as f64 } else { 0.0 };
@@ -594,7 +633,16 @@ impl<'a> Optimizer<'a> {
         });
         let stop = p.stop_at.is_some_and(|n| villagers >= n) && sim.max_villagers().is_none() && s.age >= self.target;
         let hard = click.is_some() && p.hard_clicks;
-        Choice { pool, click, stop, hard }
+        // CU adicionales (objetivos de muchos aldeanos o unidades), ya en Castillos.
+        let tc_cost = self.sc.data.building(aoe2_data::ids::TOWN_CENTER).map(|b| b.cost).unwrap_or_default();
+        if click.is_none()
+            && (sim.planned("town_center") as u32) < 1 + p.extra_tcs
+            && sim.can_build("town_center")
+            && s.res.can_afford(&tc_cost)
+        {
+            return Choice { build: Some("town_center".into()), builders: 3, ..Choice::gather(&pool) };
+        }
+        Choice { click, stop, hard, ..Choice::gather(&pool) }
     }
 
     /// Ejecuta la política completa; devuelve el plan (decisiones tomadas).
@@ -643,6 +691,11 @@ impl<'a> Optimizer<'a> {
             }
             if self.goal.allow_tc_idle {
                 variants.push(Policy { hard_clicks: !best_p.hard_clicks, ..best_p });
+            }
+            if self.goal.villagers.is_some() || !self.goal.units.is_empty() {
+                for n in 0..=2 {
+                    variants.push(Policy { extra_tcs: n, ..best_p });
+                }
             }
             if best_p.stop_at.is_some() {
                 for n in (15..=50).step_by(5) {
@@ -735,7 +788,15 @@ impl<'a> Optimizer<'a> {
             let idle = |n: &Node| if self.tc_ok(&n.sim) { 0 } else { n.sim.summary().tc_idle_total().max(1) };
             let min_idle = children.iter().map(idle).min().unwrap_or(0);
             children.retain(|n| idle(n) == min_idle);
-            children.sort_by(|a, b| a.est.total_cmp(&b.est).then_with(|| a.choices.cmp(&b.choices)));
+            // Desempate por el orden de las fuentes en el mapa (ovejas, jabalí,
+            // bayas…: el orden natural de una partida), no alfabético.
+            let rank = |n: &Node| -> Vec<usize> {
+                n.choices
+                    .iter()
+                    .map(|c| self.pools.iter().position(|p| *p == c.pool).unwrap_or(usize::MAX) * 4 + c.build.is_some() as usize * 2 + c.click.is_some() as usize)
+                    .collect()
+            };
+            children.sort_by(|a, b| a.est.total_cmp(&b.est).then_with(|| rank(a).cmp(&rank(b))));
             let mut seen = BTreeSet::new();
             beam = children
                 .into_iter()
@@ -836,7 +897,7 @@ impl<'a> Optimizer<'a> {
                 if best.choices[i].hard {
                     continue;
                 }
-                let Some(age) = self.sc.rules.tech_id(&tech).and_then(|t| self.sc.rules.age_of_tech(t)) else { continue };
+                let Some(age) = self.sc.tech_ref(&tech).and_then(|t| self.sc.rules.age_of_tech(t)) else { continue };
                 let Some(&started) = run.clicks.get(&age) else { continue };
                 let Some(j) = run.decisions.iter().rposition(|d| d.time <= started) else { continue };
                 if j <= i || j >= best.choices.len() || best.choices[j].click.is_some() {
@@ -983,12 +1044,23 @@ impl<'a> Optimizer<'a> {
     pub fn to_order(&self, plan: &Plan) -> BuildOrder {
         let decisions = self.simulate_choices(&plan.choices, None, true).decisions;
         let mut order = self.sc.order.clone();
+        let initial = self.sc.map.start.villagers;
         for d in &decisions {
-            order.villagers.push(VillagerAssign {
-                n: d.villager,
-                to: None,
-                assign: Assign { pool: Some(d.choice.pool.clone()), build: None, then: None, at: None },
-            });
+            let assign = match &d.choice.build {
+                Some(b) => Assign {
+                    pool: None,
+                    build: Some(b.clone()),
+                    then: Some(d.choice.pool.clone()),
+                    at: None,
+                    builders: Some(d.choice.builders.max(1)),
+                },
+                None => Assign { pool: Some(d.choice.pool.clone()), build: None, then: None, at: None, builders: None },
+            };
+            if d.villager <= initial {
+                order.start.push(aoe2_sim::orders::StartAssign { villagers: 1, assign });
+            } else {
+                order.villagers.push(VillagerAssign { n: d.villager, to: None, assign });
+            }
             if let Some(t) = &d.choice.click {
                 order.steps.push(Step {
                     when: Condition { villagers: Some(d.villager), ..Condition::default() },

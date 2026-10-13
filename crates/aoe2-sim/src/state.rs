@@ -89,7 +89,8 @@ pub enum Activity {
     /// Atrae un jabalí al CU.
     Luring { source: usize, left: f64 },
     /// Espera recursos para colocar un edificio que le asignó la orden.
-    WaitBuild { building: u32, at: Option<usize> },
+    /// `helpers`: aldeanos extra (del pool de constructores) que se suman a la obra.
+    WaitBuild { building: u32, at: Option<usize>, helpers: u8 },
     ToSite { site: usize, left: f64 },
     Building { site: usize },
 }

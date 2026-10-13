@@ -30,6 +30,7 @@ struct RawSections {
     buildings: HashMap<String, RawEntity>,
     #[serde(rename = "Tech")]
     techs: HashMap<String, RawEntity>,
+    unit_upgrades: HashMap<String, RawEntity>,
 }
 
 #[derive(Deserialize)]
@@ -207,12 +208,36 @@ fn import(vendor: &Path) -> Res<(GameData, HashMap<(Kind, u32), NodeVotes>)> {
         );
     }
 
+    // Mejoras de unidad (Ballestero, Hostigador de élite…): se guardan como
+    // tecnologías que se investigan en el edificio de la unidad.
+    let mut unit_upgrades = BTreeMap::new();
+    for (unit_key, e) in &raw.data.unit_upgrades {
+        let unit: u32 = unit_key.parse()?;
+        let Some(u) = units.get(&unit) else { continue };
+        let tree = u.tree.clone();
+        let names = Names {
+            en: format!("{} (upgrade)", u.names.en),
+            es: format!("{} (mejora)", u.names.es),
+        };
+        techs.entry(e.id).or_insert(Tech {
+            id: e.id,
+            internal_name: e.internal_name.clone(),
+            names,
+            cost: cost(&e.cost)?,
+            research_time: e.research_time.ok_or(format!("mejora {} sin ResearchTime", e.id))?,
+            repeatable: false,
+            tree,
+        });
+        unit_upgrades.insert(unit, e.id);
+    }
+
     let data = GameData {
         schema_version: SCHEMA_VERSION,
         source: SourceInfo { repository: REPOSITORY.to_owned(), commit: git_commit(vendor) },
         units,
         buildings,
         techs,
+        unit_upgrades,
     };
     Ok((data, votes))
 }

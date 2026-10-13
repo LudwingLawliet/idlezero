@@ -16,6 +16,40 @@ pub struct Scenario {
 }
 
 impl Scenario {
+    /// Unidad por nombre corto de rules.toml o por id ("archer" o "4").
+    pub fn unit_ref(&self, s: &str) -> Option<u32> {
+        self.rules.unit_id(s).or_else(|| s.parse().ok().filter(|id| self.data.unit(*id).is_some()))
+    }
+
+    pub fn tech_ref(&self, s: &str) -> Option<u32> {
+        self.rules.tech_id(s).or_else(|| s.parse().ok().filter(|id| self.data.tech(*id).is_some()))
+    }
+
+    pub fn building_ref(&self, s: &str) -> Option<u32> {
+        self.rules.building_id(s).or_else(|| s.parse().ok().filter(|id| self.data.building(*id).is_some()))
+    }
+
+    /// Edad mínima para construir (árbol, corregido por rules.building_age).
+    pub fn building_age(&self, b: u32) -> aoe2_data::Age {
+        let tree = self.data.building(b).and_then(|x| x.tree.as_ref()).map_or(aoe2_data::Age::Dark, |t| t.age);
+        self.rules.building_age_override(b).map_or(tree, |o| o.max(tree))
+    }
+
+    /// Tecnologías previas que faltan para `tech`, de la más antigua a la más nueva.
+    pub fn tech_chain(&self, tech: u32) -> Vec<u32> {
+        let mut chain = vec![tech];
+        let mut t = tech;
+        while let Some(prev) = self.rules.tech_prerequisite(t) {
+            if chain.contains(&prev) {
+                break;
+            }
+            chain.push(prev);
+            t = prev;
+        }
+        chain.reverse();
+        chain
+    }
+
     /// Carga `data_dir/maps/<map>.toml` y `data_dir/build_orders/<order>.toml`.
     pub fn load(data_dir: &Path, map: &str, order: &str) -> Result<Scenario, LoadError> {
         let order = BuildOrder::load(&data_dir.join("build_orders").join(format!("{order}.toml")))?;
