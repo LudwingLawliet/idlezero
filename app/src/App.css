@@ -1207,6 +1207,7 @@ kbd {
 }
 
 .civ-grid {
+  align-content: start;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
   gap: 8px;
@@ -1238,12 +1239,18 @@ kbd {
 
 .civ-cell .dot {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
   background: var(--good);
+  color: #fff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 16px;
 }
 
 .civ-detail {
@@ -1281,6 +1288,20 @@ kbd {
 .civ-badge.ok ul {
   margin: 4px 0 0;
   padding-left: 18px;
+}
+
+.civ-badge ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.civ-badge li {
+  margin: 2px 0;
+}
+
+.civ-badge.off {
+  background: var(--surface-2);
+  color: var(--muted);
 }
 
 .civ-badge.pending {

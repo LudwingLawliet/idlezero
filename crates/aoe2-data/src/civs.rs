@@ -37,11 +37,100 @@ pub enum BonusKind {
     NoHouses,
     StartResourcesAdd { resources: ResourceDelta },
     StartVillagersAdd { value: u32 },
+    /// Multiplica la tasa de las tareas `tasks` ("*" = todas).
     RateMult { tasks: Vec<String>, value: f64 },
-    SourceAmountMult { value: f64 },
-    BuildingCostMult { building: u32, resource: String, value: f64, from_age: Age },
-    TechFree { techs: Vec<u32> },
-    UnitCostMult { units: Vec<u32>, by_age: BTreeMap<Age, f64> },
+    /// Suma capacidad de carga a las tareas `tasks` ("*" = todas).
+    CarryAdd { tasks: Vec<String>, value: f64 },
+    /// Los recursos duran más; `pools` vacío = todos (y las granjas).
+    SourceAmountMult {
+        #[serde(default)]
+        pools: Vec<String>,
+        value: f64,
+    },
+    /// Velocidad de los aldeanos según la edad.
+    VillagerSpeedMult { by_age: BTreeMap<Age, f64> },
+    /// Multiplica el costo de edificios (`buildings` vacío = todos; `resources`
+    /// vacío = todos los recursos) desde una edad.
+    BuildingCostMult {
+        #[serde(default)]
+        buildings: Vec<u32>,
+        #[serde(default)]
+        resources: Vec<String>,
+        value: f64,
+        #[serde(default = "dark")]
+        from_age: Age,
+    },
+    /// Suma (o resta) al costo de unos edificios.
+    BuildingCostAdd { buildings: Vec<u32>, resources: ResourceDelta },
+    /// Tecnologías gratis: las de `techs` y las que se investigan en `researched_at`.
+    TechFree {
+        #[serde(default)]
+        techs: Vec<u32>,
+        #[serde(default)]
+        researched_at: Vec<u32>,
+    },
+    /// Multiplica el costo de tecnologías según la edad: las de `techs` y las
+    /// de `researched_at` (todo vacío = todas menos las de edad; `resources`
+    /// vacío = todos los recursos).
+    TechCostMult {
+        #[serde(default)]
+        techs: Vec<u32>,
+        #[serde(default)]
+        researched_at: Vec<u32>,
+        #[serde(default)]
+        resources: Vec<String>,
+        by_age: BTreeMap<Age, f64>,
+    },
+    /// Multiplica el costo de unidades según la edad. Se aplica a las de
+    /// `units`, a las entrenadas en `trained_at` y a las de las clases de
+    /// armadura `classes` (todo vacío = todas); `resources` vacío = todos.
+    UnitCostMult {
+        #[serde(default)]
+        units: Vec<u32>,
+        #[serde(default)]
+        trained_at: Vec<u32>,
+        #[serde(default)]
+        classes: Vec<u32>,
+        #[serde(default)]
+        resources: Vec<String>,
+        by_age: BTreeMap<Age, f64>,
+    },
+    /// Edificios que entrenan e investigan más rápido, según la edad.
+    ProductionSpeedMult { buildings: Vec<u32>, by_age: BTreeMap<Age, f64> },
+    /// Tecnologías que se investigan más rápido (`techs` vacío = todas).
+    ResearchSpeedMult {
+        #[serde(default)]
+        techs: Vec<u32>,
+        value: f64,
+    },
+    /// Recursos por cada tecnología investigada.
+    ResearchReward { resources: ResourceDelta },
+    /// Aldeanos gratis al terminar estas tecnologías.
+    TechVillagers { techs: Vec<u32>, value: u32 },
+    /// Los aldeanos construyen más rápido (`buildings` vacío = todos).
+    BuildSpeedMult {
+        #[serde(default)]
+        buildings: Vec<u32>,
+        value: f64,
+    },
+    /// Recursos al llegar a cada edad.
+    AgeReward { resources: ResourceDelta },
+    /// Aldeanos gratis por cada CU al llegar a cada edad.
+    AgeVillagers { value: u32 },
+    /// Recursos al terminar uno de estos edificios.
+    BuildingReward { buildings: Vec<u32>, resources: ResourceDelta },
+    /// Población extra que da un edificio.
+    PopulationAdd { building: u32, value: u32 },
+    /// Comida de cada granja.
+    FarmFoodMult { value: f64 },
+    /// Efecto de las mejoras de granja (Collera, Arado…).
+    FarmTechMult { value: f64 },
+    /// No necesita edificios para subir de edad.
+    NoAgeBuildings,
+}
+
+fn dark() -> Age {
+    Age::Dark
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -79,6 +168,23 @@ pub fn parse_civs(json: &str) -> Result<Vec<CivInfo>, serde_json::Error> {
 
 pub fn parse_bonuses(toml_text: &str) -> Result<Vec<CivBonuses>, toml::de::Error> {
     Ok(toml::from_str::<BonusFile>(toml_text)?.civ)
+}
+
+impl CivInfo {
+    /// Líneas de bonos del texto oficial en un idioma: las de la lista y la
+    /// de equipo al final (si la hay). Mismo orden en todos los idiomas.
+    pub fn bonus_lines(&self, lang: &str) -> Vec<String> {
+        let text = self.description.get(lang).replace("\r", "");
+        let paras: Vec<&str> = text.split("\n\n").map(str::trim).filter(|p| !p.is_empty()).collect();
+        let join = |s: &str| s.split_whitespace().collect::<Vec<_>>().join(" ");
+        let mut out: Vec<String> = paras.get(1).map_or(Vec::new(), |p| p.split('•').skip(1).map(join).filter(|l| !l.is_empty()).collect());
+        if paras.len() > 2 {
+            if let Some((_, team)) = paras[paras.len() - 1].split_once('\n') {
+                out.push(join(team));
+            }
+        }
+        out
+    }
 }
 
 impl Civ {

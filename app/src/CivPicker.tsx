@@ -48,7 +48,11 @@ export default function CivPicker({
               >
                 <img src={c.icon} alt="" />
                 <span>{c.name}</span>
-                {c.simulated.length > 0 && <i className="dot" title={L.civSimulated} />}
+                {c.simulated.length > 0 && (
+                  <i className="dot" title={`${c.simulated.length} ${L.civBonusCount}`}>
+                    {c.simulated.length}
+                  </i>
+                )}
               </button>
             ))}
           </div>
@@ -61,7 +65,7 @@ export default function CivPicker({
                 </div>
                 {sel.simulated.length > 0 ? (
                   <div className="civ-badge ok">
-                    <strong>{L.civSimulated}</strong>
+                    <strong>✓ {L.civSimulated}</strong>
                     <ul>
                       {sel.simulated.map((t) => (
                         <li key={t}>{t}</li>
@@ -71,7 +75,17 @@ export default function CivPicker({
                 ) : (
                   <div className="civ-badge pending">{L.civTreeOnly}</div>
                 )}
-                <pre className="civ-desc">{sel.description}</pre>
+                {sel.not_simulated.length > 0 && (
+                  <div className="civ-badge off">
+                    <strong>{L.civNotSimulated}</strong>
+                    <ul>
+                      {sel.not_simulated.map((t) => (
+                        <li key={t}>{t}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <p className="civ-heading muted tiny">{sel.description.split("\n")[0]}</p>
               </>
             ) : (
               <>

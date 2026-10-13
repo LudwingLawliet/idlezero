@@ -494,15 +494,24 @@ impl<'a> Sim<'a> {
                 }
                 RateMult { tasks, value } => {
                     for (i, t) in self.sc.rates.tasks.iter().enumerate() {
-                        if tasks.iter().any(|x| *x == t.id) {
+                        if tasks.iter().any(|x| *x == t.id || x == "*") {
                             self.state.effects.rate_mult[i] *= value;
                         }
                     }
                 }
-                SourceAmountMult { value } => {
-                    self.state.effects.source_mult *= value;
+                CarryAdd { tasks, value } => {
+                    for (i, t) in self.sc.rates.tasks.iter().enumerate() {
+                        if tasks.iter().any(|x| *x == t.id || x == "*") {
+                            self.state.effects.carry_add[i] += value;
+                        }
+                    }
+                }
+                SourceAmountMult { pools, value } => {
+                    if pools.is_empty() {
+                        self.state.effects.source_mult *= value;
+                    }
                     for s in &mut self.state.sources {
-                        if s.remaining.is_finite() {
+                        if s.remaining.is_finite() && (pools.is_empty() || pools.iter().any(|p| *p == self.pools[s.pool])) {
                             s.remaining *= value;
                         }
                     }
@@ -519,17 +528,14 @@ impl<'a> Sim<'a> {
     /// Costo efectivo de un edificio (con bonos de civilización según la edad).
     fn building_cost(&self, b: u32) -> Cost {
         let mut c = self.sc.data.building(b).map(|b| b.cost).unwrap_or_default();
+        use aoe2_data::civs::BonusKind::*;
         for bonus in self.sc.bonuses() {
-            if let aoe2_data::civs::BonusKind::BuildingCostMult { building, resource, value, from_age } = bonus {
-                if *building == b && self.state.age >= *from_age {
-                    let slot = match resource.as_str() {
-                        "food" => &mut c.food,
-                        "wood" => &mut c.wood,
-                        "gold" => &mut c.gold,
-                        _ => &mut c.stone,
-                    };
-                    *slot = (*slot as f64 * value).round() as u32;
+            match bonus {
+                BuildingCostMult { buildings, resources, value, from_age } if (buildings.is_empty() || buildings.contains(&b)) && self.state.age >= *from_age => {
+                    scale_cost(&mut c, resources, *value);
                 }
+                BuildingCostAdd { buildings, resources } if buildings.contains(&b) => add_cost(&mut c, resources),
+                _ => {}
             }
         }
         c
@@ -537,20 +543,40 @@ impl<'a> Sim<'a> {
 
     /// Costo efectivo de una tecnología (gratis si la civilización la regala).
     fn tech_cost(&self, tech: u32) -> Cost {
-        let free = self.sc.bonuses().any(|b| matches!(b, aoe2_data::civs::BonusKind::TechFree { techs } if techs.contains(&tech)));
-        if free { Cost::default() } else { self.sc.data.tech(tech).map(|t| t.cost).unwrap_or_default() }
+        use aoe2_data::civs::BonusKind::*;
+        let at = self.sc.data.tech(tech).and_then(|t| t.tree.as_ref()).and_then(|t| t.produced_at);
+        let in_list = |techs: &[u32], places: &[u32]| techs.contains(&tech) || at.is_some_and(|a| places.contains(&a));
+        let free = self.sc.bonuses().any(|b| matches!(b, TechFree { techs, researched_at } if in_list(techs, researched_at)));
+        if free {
+            return Cost::default();
+        }
+        let mut c = self.sc.data.tech(tech).map(|t| t.cost).unwrap_or_default();
+        let is_age = self.sc.rules.age_of_tech(tech).is_some();
+        for bonus in self.sc.bonuses() {
+            if let TechCostMult { techs, researched_at, resources, by_age } = bonus {
+                // Listas vacías = todas las tecnologías menos las de edad.
+                if in_list(techs, researched_at) || (techs.is_empty() && researched_at.is_empty() && !is_age) {
+                    scale_cost(&mut c, resources, by_age_value(by_age, self.state.age));
+                }
+            }
+        }
+        c
     }
 
     /// Costo efectivo de una unidad (descuentos por edad de la civilización).
     fn unit_cost(&self, unit: u32) -> Cost {
         let mut c = self.sc.data.unit(unit).map(|u| u.cost).unwrap_or_default();
         for bonus in self.sc.bonuses() {
-            if let aoe2_data::civs::BonusKind::UnitCostMult { units, by_age } = bonus {
-                if units.contains(&unit) {
-                    if let Some((_, m)) = by_age.iter().filter(|(a, _)| **a <= self.state.age).last() {
-                        let f = |x: u32| (x as f64 * m).round() as u32;
-                        c = Cost { food: f(c.food), wood: f(c.wood), gold: f(c.gold), stone: f(c.stone) };
-                    }
+            if let aoe2_data::civs::BonusKind::UnitCostMult { units, trained_at, classes, resources, by_age } = bonus {
+                let u = self.sc.data.unit(unit);
+                let at = u.and_then(|u| u.tree.as_ref()).and_then(|t| t.produced_at);
+                let military = unit != ids::VILLAGER;
+                let all = units.is_empty() && trained_at.is_empty() && classes.is_empty();
+                let hit = units.contains(&unit)
+                    || (military && at.is_some_and(|a| trained_at.contains(&a)))
+                    || (military && u.is_some_and(|u| u.combat.armours.iter().any(|a| classes.contains(&a.class))));
+                if all || hit {
+                    scale_cost(&mut c, resources, by_age_value(by_age, self.state.age));
                 }
             }
         }
@@ -614,7 +640,28 @@ impl<'a> Sim<'a> {
     }
 
     fn speed(&self) -> f64 {
-        self.villager_speed * self.state.effects.speed_mult
+        let mut civ = 1.0;
+        for b in self.sc.bonuses() {
+            if let aoe2_data::civs::BonusKind::VillagerSpeedMult { by_age } = b {
+                civ *= by_age_value(by_age, self.state.age);
+            }
+        }
+        self.villager_speed * self.state.effects.speed_mult * civ
+    }
+
+    /// Segundos de un trabajo en un edificio (entrenar o investigar), con los
+    /// bonos de velocidad de la civilización.
+    fn work_secs(&self, building: u32, base: u32, tech: Option<u32>) -> u32 {
+        use aoe2_data::civs::BonusKind::*;
+        let mut mult = 1.0;
+        for b in self.sc.bonuses() {
+            match b {
+                ProductionSpeedMult { buildings, by_age } if buildings.contains(&building) => mult *= by_age_value(by_age, self.state.age),
+                ResearchSpeedMult { techs, value } if tech.is_some_and(|t| techs.is_empty() || techs.contains(&t)) => mult *= value,
+                _ => {}
+            }
+        }
+        ((base as f64 / mult).round() as u32).max(1)
     }
 
     fn send_to_site(&mut self, vi: usize, site: usize, walk_tiles: f64) {
@@ -658,7 +705,16 @@ impl<'a> Sim<'a> {
         }
         let houses = self.state.count_built(ids::HOUSE) as u32;
         let tcs = self.state.count_built(ids::TOWN_CENTER) as u32;
-        (tcs * p.per_town_center + houses * p.per_house).min(p.max)
+        let extra = |b: u32| {
+            self.sc
+                .bonuses()
+                .map(|k| match k {
+                    aoe2_data::civs::BonusKind::PopulationAdd { building, value } if *building == b => *value,
+                    _ => 0,
+                })
+                .sum::<u32>()
+        };
+        (tcs * (p.per_town_center + extra(ids::TOWN_CENTER)) + houses * (p.per_house + extra(ids::HOUSE))).min(p.max)
     }
 
     fn pool_exhausted(&self, pool: usize) -> bool {
@@ -1130,7 +1186,8 @@ impl<'a> Sim<'a> {
                 let what = self.sc.rules.names.units.iter().find(|(_, v)| **v == unit).map_or(unit.to_string(), |(k, _)| k.clone());
                 let cost = self.unit_cost(unit);
                 self.spend(what, &cost);
-                self.state.training.push(Running { building: b, job: Job::Unit(unit), left: u.train_time });
+                let secs = self.work_secs(b, u.train_time, None);
+                self.state.training.push(Running { building: b, job: Job::Unit(unit), left: secs });
                 free -= 1;
                 left -= 1;
                 started += 1;
@@ -1166,7 +1223,8 @@ impl<'a> Sim<'a> {
         if self.sc.tech_prereq(tech).is_some_and(|p| !self.state.has_tech(p)) {
             return false;
         }
-        if let Some(req) = self.sc.rules.age_requirement(tech) {
+        let no_age_buildings = self.sc.bonuses().any(|b| matches!(b, aoe2_data::civs::BonusKind::NoAgeBuildings));
+        if let Some(req) = self.sc.rules.age_requirement(tech).filter(|_| !no_age_buildings) {
             let have = req.buildings.iter().filter(|b| self.state.count_built(**b) > 0).count() as u32;
             if have < req.count {
                 return false;
@@ -1222,7 +1280,7 @@ impl<'a> Sim<'a> {
                 self.spend(name.clone(), &cost);
                 self.state.pending_research.remove(pos);
                 self.state.soft_research.retain(|t| *t != tech);
-                let time = self.sc.data.tech(tech).unwrap().research_time;
+                let time = self.work_secs(ids::TOWN_CENTER, self.sc.data.tech(tech).unwrap().research_time, Some(tech));
                 self.state.tcs[i].job = Some(Running { building: ids::TOWN_CENTER, job: Job::Research(tech), left: time });
                 if let Some(age) = self.sc.rules.age_of_tech(tech) {
                     self.summary.age_clicks.insert(age, self.state.time);
@@ -1244,11 +1302,13 @@ impl<'a> Sim<'a> {
                 Some(IdleCause::NoOrder)
             } else if self.state.pop() + in_production + self.state.training.len() as u32 >= self.pop_cap() {
                 Some(IdleCause::Housed)
-            } else if !self.state.res.can_afford(&v.cost) {
+            } else if !self.state.res.can_afford(&self.unit_cost(ids::VILLAGER)) {
                 Some(IdleCause::NoFood)
             } else {
-                self.spend("villager".to_owned(), &v.cost);
-                self.state.tcs[i].job = Some(Running { building: ids::TOWN_CENTER, job: Job::Villager, left: v.train_time });
+                let cost = self.unit_cost(ids::VILLAGER);
+                self.spend("villager".to_owned(), &cost);
+                let left = self.work_secs(ids::TOWN_CENTER, v.train_time, None);
+                self.state.tcs[i].job = Some(Running { building: ids::TOWN_CENTER, job: Job::Villager, left });
                 None
             };
         }
@@ -1290,7 +1350,7 @@ impl<'a> Sim<'a> {
                 let name = self.tech_name(tech);
                 self.spend(name.clone(), &cost);
                 self.state.pending_research.remove(i);
-                let time = self.sc.data.tech(tech).unwrap().research_time;
+                let time = self.work_secs(b, self.sc.data.tech(tech).unwrap().research_time, Some(tech));
                 self.state.research.push(Running { building: b, job: Job::Research(tech), left: time });
                 self.event(Event::ResearchStarted { tech: name });
             } else {
@@ -1314,36 +1374,7 @@ impl<'a> Sim<'a> {
     fn finish_job(&mut self, r: Running, tc: Option<usize>) {
         let now = self.state.time + 1;
         match r.job {
-            Job::Villager => {
-                let id = self.spawn_villager(Some(tc.unwrap_or(0)));
-                let vi = self.vidx(id);
-                let assign = self.sc.order.assignment_for(id).cloned();
-                let label = match &assign {
-                    Some(a) if a.build.is_some() => {
-                        let b = self.sc.building_ref(a.build.as_deref().unwrap()).unwrap();
-                        let at = a.at.as_deref().map(|p| self.pool(p));
-                        self.state.villagers[vi].pool = self.pool(a.then.as_deref().unwrap());
-                        let helpers = a.builders.unwrap_or(1).saturating_sub(1).min(255) as u8;
-                        self.state.villagers[vi].activity = Activity::WaitBuild { building: b, at, helpers };
-                        format!("{} → {}", a.build.as_deref().unwrap(), a.then.as_deref().unwrap())
-                    }
-                    Some(a) => {
-                        let p = self.pool(a.pool.as_deref().unwrap());
-                        self.assign_pool(vi, p);
-                        a.pool.clone().unwrap()
-                    }
-                    None if self.external => {
-                        self.decisions.push_back(id);
-                        "?".to_owned()
-                    }
-                    None => {
-                        let p = self.pool(&self.sc.order.default_pool);
-                        self.assign_pool(vi, p);
-                        self.sc.order.default_pool.clone()
-                    }
-                };
-                self.events.push(TimedEvent { time: now, event: Event::VillagerCreated { villager: id, assignment: label } });
-            }
+            Job::Villager => self.new_villager(tc.unwrap_or(0), now),
             Job::Unit(unit) => {
                 *self.state.units.entry(unit).or_default() += 1;
                 let count = self.state.units_of(unit);
@@ -1355,13 +1386,91 @@ impl<'a> Sim<'a> {
                 self.apply_modifiers(tech);
                 let name = self.tech_name(tech);
                 self.events.push(TimedEvent { time: now, event: Event::ResearchFinished { tech: name } });
+                self.research_bonuses(tech, tc, now);
                 if let Some(age) = self.sc.rules.age_of_tech(tech) {
                     self.state.age = age;
                     self.summary.age_reached.insert(age, now);
                     self.events.push(TimedEvent { time: now, event: Event::AgeReached { age } });
+                    self.age_bonuses(now);
                 }
             }
         }
+    }
+
+    /// Bonos al terminar una investigación: recursos y aldeanos gratis.
+    fn research_bonuses(&mut self, tech: u32, tc: Option<usize>, now: u32) {
+        use aoe2_data::civs::BonusKind::*;
+        let bonuses: Vec<_> = self.sc.bonuses().cloned().collect();
+        for b in bonuses {
+            match b {
+                ResearchReward { resources } => self.add_resources(&resources),
+                TechVillagers { techs, value } if techs.contains(&tech) => {
+                    for _ in 0..value {
+                        self.new_villager(tc.unwrap_or(0), now);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Bonos al llegar a una edad: recursos y aldeanos gratis.
+    fn age_bonuses(&mut self, now: u32) {
+        use aoe2_data::civs::BonusKind::*;
+        let bonuses: Vec<_> = self.sc.bonuses().cloned().collect();
+        for b in bonuses {
+            match b {
+                AgeReward { resources } => self.add_resources(&resources),
+                AgeVillagers { value } => {
+                    for tc in 0..self.state.tcs.len() {
+                        for _ in 0..value {
+                            self.new_villager(tc, now);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn add_resources(&mut self, d: &aoe2_data::civs::ResourceDelta) {
+        let r = &mut self.state.res;
+        r.food = (r.food + d.food as f64).max(0.0);
+        r.wood = (r.wood + d.wood as f64).max(0.0);
+        r.gold = (r.gold + d.gold as f64).max(0.0);
+        r.stone = (r.stone + d.stone as f64).max(0.0);
+    }
+
+    /// Aldeano nuevo de un CU: asignación de la orden, decisión externa o pool por defecto.
+    fn new_villager(&mut self, tc: usize, now: u32) {
+        let id = self.spawn_villager(Some(tc));
+        let vi = self.vidx(id);
+        let assign = self.sc.order.assignment_for(id).cloned();
+        let label = match &assign {
+            Some(a) if a.build.is_some() => {
+                let b = self.sc.building_ref(a.build.as_deref().unwrap()).unwrap();
+                let at = a.at.as_deref().map(|p| self.pool(p));
+                self.state.villagers[vi].pool = self.pool(a.then.as_deref().unwrap());
+                let helpers = a.builders.unwrap_or(1).saturating_sub(1).min(255) as u8;
+                self.state.villagers[vi].activity = Activity::WaitBuild { building: b, at, helpers };
+                format!("{} → {}", a.build.as_deref().unwrap(), a.then.as_deref().unwrap())
+            }
+            Some(a) => {
+                let p = self.pool(a.pool.as_deref().unwrap());
+                self.assign_pool(vi, p);
+                a.pool.clone().unwrap()
+            }
+            None if self.external => {
+                self.decisions.push_back(id);
+                "?".to_owned()
+            }
+            None => {
+                let p = self.pool(&self.sc.order.default_pool);
+                self.assign_pool(vi, p);
+                self.sc.order.default_pool.clone()
+            }
+        };
+        self.events.push(TimedEvent { time: now, event: Event::VillagerCreated { villager: id, assignment: label } });
     }
 
     /// Da por construido el punto de entrega de la primera fuente del pool
@@ -1402,7 +1511,17 @@ impl<'a> Sim<'a> {
                 }
                 ModifierKind::CarryMult => e.carry_mult *= m.value,
                 ModifierKind::SpeedMult => e.speed_mult *= m.value,
-                ModifierKind::FarmFoodAdd => e.farm_food_add += m.value,
+                ModifierKind::FarmFoodAdd => {
+                    let civ: f64 = self
+                        .sc
+                        .bonuses()
+                        .map(|k| match k {
+                            aoe2_data::civs::BonusKind::FarmTechMult { value } => *value,
+                            _ => 1.0,
+                        })
+                        .product();
+                    self.state.effects.farm_food_add += m.value * civ;
+                }
             }
         }
     }
@@ -1753,7 +1872,15 @@ impl<'a> Sim<'a> {
             let b = self.state.sites[site].building;
             let base = self.sc.data.building(b).map_or(1, |b| b.build_time);
             // Tiempo con n constructores = 3t/(n+2): avance por segundo = 1 / ese tiempo.
-            self.state.sites[site].progress += 1.0 / self.sc.rates.build_time(base, builders);
+            let mut speed = 1.0;
+            for k in self.sc.bonuses() {
+                if let aoe2_data::civs::BonusKind::BuildSpeedMult { buildings, value } = k {
+                    if buildings.is_empty() || buildings.contains(&b) {
+                        speed *= value;
+                    }
+                }
+            }
+            self.state.sites[site].progress += speed / self.sc.rates.build_time(base, builders);
             if self.state.sites[site].progress >= 1.0 - EPS {
                 self.complete_site(site);
             }
@@ -1766,6 +1893,17 @@ impl<'a> Sim<'a> {
         self.state.sites[site].finished = Some(now);
         let b = self.state.sites[site].building;
         self.state.built.push((b, now));
+        let rewards: Vec<_> = self
+            .sc
+            .bonuses()
+            .filter_map(|k| match k {
+                aoe2_data::civs::BonusKind::BuildingReward { buildings, resources } if buildings.contains(&b) => Some(resources.clone()),
+                _ => None,
+            })
+            .collect();
+        for r in rewards {
+            self.add_resources(&r);
+        }
         let name = self.building_name(b);
         self.summary.buildings.push((name.clone(), now));
         self.events.push(TimedEvent { time: now, event: Event::BuildFinished { building: name } });
@@ -1774,7 +1912,12 @@ impl<'a> Sim<'a> {
             self.state.tcs.push(TownCenter { site: Some(site), job: None });
         }
         if let Some(owner) = self.state.sites[site].farm_for {
-            let food = (self.sc.rules.farm.food as f64 + self.state.effects.farm_food_add) * self.state.effects.source_mult;
+            let mut food = (self.sc.rules.farm.food as f64 + self.state.effects.farm_food_add) * self.state.effects.source_mult;
+            for k in self.sc.bonuses() {
+                if let aoe2_data::civs::BonusKind::FarmFoodMult { value } = k {
+                    food *= value;
+                }
+            }
             self.state.farms.push(Farm { remaining: food });
             let f = self.state.farms.len() - 1;
             let vi = self.vidx(owner);
@@ -1946,4 +2089,37 @@ fn res_index(r: aoe2_data::rates::Resource) -> usize {
 
 fn round1(x: f64) -> f64 {
     (x * 10.0).round() / 10.0
+}
+
+/// Valor de un bono por edades: el de la última edad alcanzada (1 si ninguna).
+fn by_age_value(by_age: &BTreeMap<Age, f64>, age: Age) -> f64 {
+    by_age.iter().filter(|(a, _)| **a <= age).last().map_or(1.0, |(_, v)| *v)
+}
+
+/// Multiplica los recursos `resources` (vacío = todos) de un costo.
+fn scale_cost(c: &mut Cost, resources: &[String], value: f64) {
+    let all = resources.is_empty();
+    let has = |r: &str| all || resources.iter().any(|x| x == r);
+    let f = |x: u32| (x as f64 * value).round() as u32;
+    if has("food") {
+        c.food = f(c.food);
+    }
+    if has("wood") {
+        c.wood = f(c.wood);
+    }
+    if has("gold") {
+        c.gold = f(c.gold);
+    }
+    if has("stone") {
+        c.stone = f(c.stone);
+    }
+}
+
+/// Suma (o resta, sin bajar de 0) a un costo.
+fn add_cost(c: &mut Cost, d: &aoe2_data::civs::ResourceDelta) {
+    let f = |x: u32, d: i32| (x as i64 + d as i64).max(0) as u32;
+    c.food = f(c.food, d.food);
+    c.wood = f(c.wood, d.wood);
+    c.gold = f(c.gold, d.gold);
+    c.stone = f(c.stone, d.stone);
 }

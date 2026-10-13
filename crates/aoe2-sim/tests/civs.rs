@@ -96,3 +96,43 @@ fn civ_simulation_is_deterministic() {
     let b = serde_json::to_string(&simulate(&fc(Some("Mayans")), Stop { max_seconds: 1200, age: Some(Age::Castle) }).unwrap()).unwrap();
     assert_eq!(a, b);
 }
+
+/// Espacios normalizados (el texto oficial parte algunas líneas).
+fn norm(s: &str) -> String {
+    s.split_whitespace().collect::<Vec<_>>().join(" ").replace('\u{a0}', " ")
+}
+
+#[test]
+fn every_bonus_cites_its_official_line() {
+    let dir = repo_data_dir();
+    let civs = aoe2_data::civs::parse_civs(&std::fs::read_to_string(dir.join("civs.json")).unwrap()).unwrap();
+    let bonuses = aoe2_data::civs::parse_bonuses(&std::fs::read_to_string(dir.join("civ_bonuses.toml")).unwrap()).unwrap();
+    assert!(bonuses.len() >= 40, "solo {} civilizaciones con bonos", bonuses.len());
+    for cb in &bonuses {
+        let civ = civs.iter().find(|c| c.id == cb.id).unwrap_or_else(|| panic!("civilización desconocida {}", cb.id));
+        let desc = norm(&civ.description.es);
+        for b in &cb.bonuses {
+            assert!(desc.contains(&norm(&b.text)), "{}: \"{}\" no está en el texto oficial", cb.id, b.text);
+        }
+    }
+}
+
+#[test]
+fn all_civilizations_simulate_the_fast_castle_order() {
+    let dir = repo_data_dir();
+    let civs = aoe2_data::civs::parse_civs(&std::fs::read_to_string(dir.join("civs.json")).unwrap()).unwrap();
+    assert_eq!(civs.len(), 56);
+    let neutral = simulate(&fc(None), Stop { max_seconds: 3600, age: Some(Age::Castle) }).unwrap();
+    let n = neutral.summary.age_reached[&Age::Castle];
+    for c in &civs {
+        let tl = simulate(&fc(Some(&c.id)), Stop { max_seconds: 3600, age: Some(Age::Castle) }).unwrap_or_else(|e| panic!("{}: {e}", c.id));
+        let t = *tl.summary.age_reached.get(&Age::Castle).unwrap_or_else(|| panic!("{} no llega a Castillos", c.id));
+        // La orden manual no aprovecha los bonos, pero ninguna civilización
+        // debería quedar muy lejos del escenario neutro.
+        eprintln!("{:<12} {:+}", c.id, t as i64 - n as i64);
+        // Los chinos empiezan sin comida: la orden manual no está hecha para ellos.
+        if c.id != "Chinese" {
+            assert!(t <= n + 120, "{}: {t} s frente a {n} s neutro", c.id);
+        }
+    }
+}

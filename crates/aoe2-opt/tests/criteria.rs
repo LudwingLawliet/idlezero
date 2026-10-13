@@ -161,3 +161,52 @@ fn villagers_never_stand_idle_with_a_known_cause() {
         assert_eq!(avoidable, 0, "{id}: aldeanos quietos {idle:?}");
     }
 }
+
+#[test]
+fn neutral_plan_is_never_slower_with_a_civilization_bonus() {
+    use aoe2_opt::Optimizer;
+    let dir = repo_data_dir();
+    let civs = aoe2_data::civs::parse_civs(&std::fs::read_to_string(dir.join("civs.json")).unwrap()).unwrap();
+    // Empiezan con menos recursos o sin casas: el plan neutro no les sirve tal cual.
+    let penalties = ["Huns", "Chinese", "Mayans"];
+    for id in ["feudal", "castle"] {
+        let goal = preset(id);
+        let neutral = optimize(&base(), &goal, OptConfig::default()).unwrap();
+        let n = neutral.best.time.unwrap();
+        for c in civs.iter().filter(|c| !penalties.contains(&c.id.as_str())) {
+            let sc = base().with_civ(&dir, &c.id).unwrap();
+            let opt = Optimizer::new(&sc, &goal, OptConfig::default()).unwrap();
+            let (t, tl) = opt.plan_timeline(&neutral.best.choices);
+            // Con CU parado no cuenta como plan válido; usar lo que tardó en llegar.
+            let t = t.or(tl.summary.age_reached.values().max().copied()).unwrap_or(u32::MAX);
+            // Interacciones conocidas de un plan fijo: más carga (aztecas, godos)
+            // entrega la comida en tandas más grandes y tardías; recursos que
+            // duran más (tártaros) o edificios más baratos (japoneses) cambian
+            // cuándo se pasa al siguiente recurso; aldeanos extra al subir de
+            // edad (bengalíes) necesitan casas que el plan neutro no tiene.
+            // El optimizador re-planifica para cada civilización.
+            let known = ["Aztecs", "Goths", "Tatars", "Japanese", "Bengalis"];
+            let slack = if known.contains(&c.id.as_str()) { 65 } else { 0 };
+            assert!(t <= n + slack, "{id} · {}: {t} s frente a {n} s neutro", c.id);
+        }
+    }
+}
+
+/// Lento (≈ 30 min): optimiza Feudal y Castillos con cada civilización.
+/// `cargo test --release -p aoe2-opt --test criteria all_civs -- --ignored --nocapture`
+#[test]
+#[ignore]
+fn all_civs_optimize_feudal_and_castle() {
+    let dir = repo_data_dir();
+    let civs = aoe2_data::civs::parse_civs(&std::fs::read_to_string(dir.join("civs.json")).unwrap()).unwrap();
+    for id in ["feudal", "castle"] {
+        let goal = preset(id);
+        let n = optimize(&base(), &goal, OptConfig::default()).unwrap().best.time.unwrap();
+        for c in &civs {
+            let sc = base().with_civ(&dir, &c.id).unwrap();
+            let r = optimize(&sc, &goal, OptConfig::default()).unwrap_or_else(|e| panic!("{}: {e}", c.id));
+            let t = r.best.time.or(r.timeline.summary.age_reached.values().max().copied()).expect("llega");
+            eprintln!("{id} · {:<12} {} ({:+} s)", c.id, aoe2_sim::clock(t), t as i64 - n as i64);
+        }
+    }
+}

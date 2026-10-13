@@ -277,6 +277,8 @@ export interface CivView {
   icon: string;
   /** Bonos que el simulador aplica (vacío = solo árbol tecnológico). */
   simulated: string[];
+  /** Bonos del texto oficial que no afectan a la economía simulada. */
+  not_simulated: string[];
   units: number[];
   techs: number[];
   buildings: number[];

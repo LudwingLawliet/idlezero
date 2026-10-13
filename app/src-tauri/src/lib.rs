@@ -517,6 +517,9 @@ struct CivView {
     icon: String,
     /// Bonos que el simulador aplica (vacío = solo el árbol tecnológico).
     simulated: Vec<String>,
+    /// Bonos del texto oficial que no afectan a la economía simulada
+    /// (militares, navales, de mapa, de equipo sin cifras).
+    not_simulated: Vec<String>,
     units: Vec<u32>,
     techs: Vec<u32>,
     buildings: Vec<u32>,
@@ -530,22 +533,27 @@ fn civs(lang: String) -> Vec<CivView> {
         .civs
         .iter()
         .map(|c| {
-            let simulated = b
+            // Las citas están en español; se comparan por posición con el idioma pedido.
+            let cited: Vec<String> = b
                 .civ_bonuses
                 .iter()
                 .find(|x| x.id == c.id)
-                .map(|x| {
-                    let mut t: Vec<String> = x.bonuses.iter().map(|b| b.text.clone()).collect();
-                    t.dedup();
-                    t
-                })
+                .map(|x| x.bonuses.iter().map(|b| b.text.split_whitespace().collect::<Vec<_>>().join(" ")).collect())
                 .unwrap_or_default();
+            let es = c.bonus_lines("es");
+            let shown = c.bonus_lines(&lang);
+            let (mut simulated, mut not_simulated) = (Vec::new(), Vec::new());
+            for (i, line) in shown.iter().enumerate() {
+                let is_sim = es.get(i).is_some_and(|l| cited.iter().any(|t| t == l));
+                if is_sim { simulated.push(line.clone()) } else { not_simulated.push(line.clone()) }
+            }
             CivView {
                 id: c.id.clone(),
                 name: c.names.get(&lang).to_owned(),
                 description: c.description.get(&lang).to_owned(),
                 icon: format!("/img/civ/{}", c.icon),
                 simulated,
+                not_simulated,
                 units: c.units.clone(),
                 techs: c.techs.clone(),
                 buildings: c.buildings.clone(),
@@ -634,7 +642,13 @@ mod civs_tests {
         assert_eq!(huns.name, "Hunos");
         assert!(huns.description.contains("casas"));
         assert!(!huns.simulated.is_empty());
-        assert!(list.iter().any(|c| c.simulated.is_empty()), "las demás solo con árbol");
+        assert_eq!(huns.simulated.len(), 3, "{:?}", huns.simulated);
+        assert!(huns.not_simulated.iter().any(|l| l.to_lowercase().contains("trebuchet")), "{:?}", huns.not_simulated);
+        let en = super::civs("en".into());
+        let britons = en.iter().find(|c| c.id == "Britons").unwrap();
+        assert!(britons.simulated.iter().any(|l| l.contains("Shepherds")));
+        assert!(britons.not_simulated.iter().any(|l| l.contains("range")));
+        assert!(list.iter().filter(|c| !c.simulated.is_empty()).count() >= 40);
     }
 }
 

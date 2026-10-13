@@ -1,29 +1,80 @@
-# Bonos de civilización que el simulador aplica. Cada bono cita la línea del
-# texto oficial del juego (data/civs.json, sacado de aoe2techtree). Las demás
-# civilizaciones usan solo su árbol tecnológico hasta que se añadan aquí.
+# Bonos de civilización que el simulador aplica (generado por
+# tools/gen_bonuses.py a partir de data/civs.json; editar el script, no este archivo).
+# Cada bono cita la línea oficial del juego (en español) que lo respalda; los
+# bonos que no aparecen aquí (militares, navales, de mapa, sin cifras) se
+# muestran en la app como "no simulados".
 #
-# kind:
-#   no_houses            no necesitan casas (población máxima desde el inicio)
-#   start_resources_add  suma (o resta) recursos al empezar
-#   start_villagers_add  aldeanos extra al empezar
-#   rate_mult            multiplica la tasa de las tareas `tasks`
-#   source_amount_mult   los recursos del mapa (y las granjas) duran más
-#   building_cost_mult   multiplica un recurso del costo de un edificio desde una edad
-#   tech_free            tecnologías gratis
-#   unit_cost_mult       multiplica el costo de unidades según la edad
-schema_version = 1
+# kind: no_houses, start_resources_add, start_villagers_add, rate_mult, carry_add,
+#   source_amount_mult, villager_speed_mult, building_cost_mult, building_cost_add,
+#   tech_free, tech_cost_mult, unit_cost_mult, production_speed_mult,
+#   research_speed_mult, research_reward, tech_villagers, build_speed_mult,
+#   age_reward, age_villagers, building_reward, population_add, farm_food_mult,
+#   farm_tech_mult, no_age_buildings (ver crates/aoe2-data/src/civs.rs)
+schema_version = 2
 
 [[civ]]
-id = "Huns"
-
-[[civ.bonus]]
-kind = "no_houses"
-text = "No necesitan casas, pero comienzan con 100 menos de madera"
+id = "Aztecs"
 
 [[civ.bonus]]
 kind = "start_resources_add"
+resources = { gold = 50 }
+text = "Comienzas con +50 de oro"
+# Start with +50 gold
+
+[[civ.bonus]]
+kind = "carry_add"
+tasks = ["*"]
+value = 3
+text = "Los aldeanos cargan +3"
+# Villagers carry +3
+
+[[civ.bonus]]
+kind = "production_speed_mult"
+buildings = [12, 87, 101, 49]
+by_age = { Dark = 1.15 }
+text = "Las unidades militares se entrenan un 15 % más rápido"
+# Military Units train +15% faster
+
+[[civ]]
+id = "Bengalis"
+
+[[civ.bonus]]
+kind = "age_villagers"
+value = 2
+text = "Los centros urbanos generan 2 aldeanos cuando se avanza a la siguiente edad"
+# Town Centers spawn 2 Villagers when the next Age is reached
+
+[[civ]]
+id = "Berbers"
+
+[[civ.bonus]]
+kind = "villager_speed_mult"
+by_age = { Dark = 1.05, Feudal = 1.10 }
+text = "Los aldeanos se mueven un 5 % más rápido en la Edad Oscura y un 10 % más rápido a partir de la Edad Feudal"
+# Villagers move +5% faster in Dark Age, +10% faster starting in Feudal Age
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+trained_at = [101]
+by_age = { Castle = 0.85, Imperial = 0.80 }
+text = "Las unidades de los establos cuestan un 15 % menos en la Edad de los Castillos y un 20 % menos en la Edad Imperial"
+# Stable Units cost -15/20% in Castle/Imperial Age
+
+[[civ]]
+id = "Bohemians"
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [55, 182, 278, 279]
+text = "Las tecnologías de los campamentos mineros son gratuitas"
+# Mining Camp technologies free
+
+[[civ.bonus]]
+kind = "building_cost_add"
+buildings = [103, 209]
 resources = { wood = -100 }
-text = "No necesitan casas, pero comienzan con 100 menos de madera"
+text = "Las herrerías y las universidades cuestan 100 menos de madera"
+# Blacksmiths and Universities cost -100 wood
 
 [[civ]]
 id = "Britons"
@@ -32,15 +83,227 @@ id = "Britons"
 kind = "rate_mult"
 tasks = ["shepherd"]
 value = 1.25
-text = "Los pastores trabajan un +25 % más rápido"
+text = "Los pastores trabajan un +25 % más rápido"
+# Shepherds work +25% faster
 
 [[civ.bonus]]
 kind = "building_cost_mult"
-building = 109
-resource = "wood"
+buildings = [109]
+resources = ["wood"]
 value = 0.5
 from_age = "Castle"
 text = "Los centros urbanos cuestan un 50 % menos de madera a partir de la Edad de los Castillos"
+# Town Centers cost -50% wood starting in Castle Age
+
+[[civ.bonus]]
+kind = "production_speed_mult"
+buildings = [87]
+by_age = { Dark = 1.10 }
+text = "Las galerías de tiro con arco funcionan un +10 % más rápido"
+# Archery Ranges work +10% faster
+
+[[civ]]
+id = "Bulgarians"
+
+[[civ.bonus]]
+kind = "building_cost_mult"
+buildings = [109]
+resources = ["stone"]
+value = 0.5
+text = "Los centros urbanos cuestan un 50 % menos de piedra"
+# Town Centers cost -50% stone
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [222, 207, 217, 264]
+text = "Mejoras gratis para la línea de milicia"
+# Militia-line upgrades free
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+researched_at = [103, 49]
+resources = ["food"]
+by_age = { Dark = 0.5 }
+text = "Tecnologías del herrero y del taller de maquinaria de asedio cuestan un 50 % menos de comida"
+# Blacksmith and Siege Workshop technologies cost -50% food
+
+[[civ]]
+id = "Burgundians"
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+techs = [202, 203, 221, 55, 182, 278, 279, 14, 13, 12, 213, 249]
+resources = ["food"]
+by_age = { Dark = 0.6 }
+approximate = true  # "una edad antes" no se simula
+text = "Las mejoras económicas están disponibles una edad antes y cuestan un 40% menos de comida"
+# Economic upgrades available one age earlier and cost -40% food
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+researched_at = [101]
+by_age = { Dark = 0.5 }
+text = "Las tecnologías de los establos cuestan un 50 % menos"
+# Stable technologies cost -50%
+
+[[civ]]
+id = "Burmese"
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [202, 203, 221]
+text = "Tecnologías de campamento maderero gratis"
+# Lumber Camp technologies free
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+researched_at = [104]
+by_age = { Dark = 0.5 }
+text = "Las tecnologías del monasterio cuestan un 50 % menos"
+# Monastery technologies cost -50%
+
+[[civ]]
+id = "Byzantines"
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+techs = [103]
+by_age = { Dark = 0.67 }
+text = "Avanzar a la Edad Imperial cuesta un 33 % menos"
+# Advancing to Imperial Age costs -33%
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+units = [329, 330, 207, 7, 6, 93, 358, 359]
+by_age = { Dark = 0.75 }
+text = "Los jinetes de camello, los guerrilleros y los lanceros cuestan un 25 % menos"
+# Camel Riders, Skirmishers and Spearman-line cost -25%
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [8, 280]
+text = "Torres de vigilancia y guardia de la ciudad gratis"
+# Town Watch, Town Patrol free
+
+[[civ]]
+id = "Celts"
+
+[[civ.bonus]]
+kind = "rate_mult"
+tasks = ["lumberjack"]
+value = 1.15
+text = "Los leñadores trabajan un 15 % más rápido"
+# Lumberjacks work +15% faster
+
+[[civ]]
+id = "Chinese"
+
+[[civ.bonus]]
+kind = "start_villagers_add"
+value = 3
+text = "Comienza con +3 aldeanos, -50 de madera, -200 de comida"
+# Start with +3 Villagers, but -50 wood and -200 food
+
+[[civ.bonus]]
+kind = "start_resources_add"
+resources = { wood = -50, food = -200 }
+text = "Comienza con +3 aldeanos, -50 de madera, -200 de comida"
+# Start with +3 Villagers, but -50 wood and -200 food
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+by_age = { Feudal = 0.95, Castle = 0.90, Imperial = 0.85 }
+approximate = true  # sin contar los avances de edad
+text = "Las tecnologías cuestan un 5/10/15 % menos en la Edad Feudal, la Edad de los Castillos y la Edad Imperial, respectivamente"
+# Technologies cost -5/10/15% in Feudal/Castle/Imperial Age
+
+[[civ.bonus]]
+kind = "population_add"
+building = 109
+value = 15
+text = "Los centros urbanos ganan +7 de campo de visión y habilitan +15 de espacio de población"
+# Town Centers +7 line of sight and provide +15 population space
+
+[[civ.bonus]]
+kind = "farm_food_mult"
+value = 1.10
+text = "Las granjas ganan un +10 % más de comida"
+# Farms +10% food
+
+[[civ]]
+id = "Cumans"
+
+[[civ.bonus]]
+kind = "building_cost_add"
+buildings = [87, 101]
+resources = { wood = -75 }
+text = "Las galerías de tiro y los establos cuestan 75 menos de madera"
+# Archery Ranges and Stables cost -75 wood
+
+[[civ]]
+id = "Danes"
+
+[[civ.bonus]]
+kind = "rate_mult"
+tasks = ["shepherd", "hunter", "forager", "farmer", "fisherman"]
+value = 1.05
+approximate = true  # entregar +5 % ≈ recolectar +5 %
+text = "Los buques de pesca y los aldeanos dejan un 5 % más de comida"
+# Fishing Ships and Villagers drop off +5% food
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+researched_at = [12, 49]
+resources = ["gold"]
+by_age = { Dark = 0.34 }
+text = "Las mejoras del cuartel y el taller de maquinaria de asedio cuestan un 66 % menos de oro"
+# Barracks and Siege Workshop upgrades cost -66% gold
+
+[[civ]]
+id = "Dravidians"
+
+[[civ.bonus]]
+kind = "carry_add"
+tasks = ["fisherman"]
+value = 15
+text = "Los pescadores y buques de pesca pueden transportar +15"
+# Fishermen and Fishing Ships carry +15
+
+[[civ.bonus]]
+kind = "age_reward"
+resources = { wood = 200 }
+text = "Recibes +200 de madera al avanzar a la siguiente edad"
+# Receive +200 wood when advancing to the next Age
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+researched_at = [12]
+by_age = { Dark = 0.5 }
+text = "Las tecnologías de los cuarteles cuestan un 50 % menos"
+# Barracks technologies cost -50%
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+trained_at = [49]
+resources = ["wood"]
+by_age = { Dark = 0.67 }
+text = "Las armas de asedio cuestan un 33 % menos de madera"
+# Siege Weapons cost -33% wood
+
+[[civ]]
+id = "Ethiopians"
+
+[[civ.bonus]]
+kind = "age_reward"
+resources = { food = 100, gold = 100 }
+text = "Reciben +100 de oro y +100 de comida al avanzar a la siguiente edad"
+# Receive +100 gold and +100 food when advancing to the next Age
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [197]
+text = "Mejoras de piquero gratis"
+# Pikeman upgrade free
 
 [[civ]]
 id = "Franks"
@@ -49,12 +312,296 @@ id = "Franks"
 kind = "rate_mult"
 tasks = ["forager"]
 value = 1.15
-text = "Los recolectores trabajan un +15 % más rápido"
+text = "Los recolectores trabajan un +15 % más rápido"
+# Foragers work +15% faster
 
 [[civ.bonus]]
 kind = "tech_free"
-techs = [14, 13, 12]   # Collera, Arado pesado, Rotación de cultivos
+techs = [14, 13, 12]
 text = "Tecnologías de molino gratuitas"
+# Mill technologies free
+
+[[civ]]
+id = "Goths"
+
+[[civ.bonus]]
+kind = "research_speed_mult"
+techs = [22]
+value = 1000.0
+text = "Telar puede investigarse al instante"
+# Loom is researched instantly
+
+[[civ.bonus]]
+kind = "carry_add"
+tasks = ["hunter"]
+value = 15
+text = "Los cazadores cargan +15; los animales que caces duran un 20 % más"
+# Hunters carry +15; hunted animals last +20% longer
+
+[[civ.bonus]]
+kind = "source_amount_mult"
+pools = ["boar", "deer"]
+value = 1.2
+text = "Los cazadores cargan +15; los animales que caces duran un 20 % más"
+# Hunters carry +15; hunted animals last +20% longer
+
+[[civ.bonus]]
+kind = "production_speed_mult"
+buildings = [12]
+by_age = { Dark = 1.20 }
+text = "Los cuarteles funcionan un 20 % más rápido"
+# Barracks work +20% faster
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+classes = [1]
+by_age = { Dark = 0.85, Feudal = 0.80, Castle = 0.75, Imperial = 0.70 }
+text = "La infantería cuesta un 15/20/25/30 % menos en la Edad Oscura, la Edad Feudal, la Edad de los Castillos y la Edad Imperial, respectivamente"
+# Infantry costs -15/20/25/30% in Dark/Feudal/Castle/ Imperial Age
+
+[[civ]]
+id = "Hindustanis"
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+units = [83]
+by_age = { Dark = 0.92, Feudal = 0.87, Castle = 0.82, Imperial = 0.77 }
+text = "Los aldeanos cuestan un 8/13/18/23% menos en la Edad Oscura/Edad Feudal/Edad de los Castillos/ Edad Imperial"
+# Villagers cost -8/13/18/23% in Dark/Feudal/Castle/ Imperial Age
+
+[[civ]]
+id = "Huns"
+
+[[civ.bonus]]
+kind = "no_houses"
+text = "No necesitan casas, pero comienzan con 100 menos de madera"
+# Do not need houses, but start with -100 wood
+
+[[civ.bonus]]
+kind = "start_resources_add"
+resources = { wood = -100 }
+text = "No necesitan casas, pero comienzan con 100 menos de madera"
+# Do not need houses, but start with -100 wood
+
+[[civ.bonus]]
+kind = "production_speed_mult"
+buildings = [101]
+by_age = { Dark = 1.20 }
+text = "Los establos funcionan un 20 % más rápido"
+# Stables work +20% faster
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+units = [39, 474]
+by_age = { Castle = 0.9, Imperial = 0.8 }
+text = "Los arqueros a caballo cuestan un 10 % menos en la Edad de los Castillos y un 20 % menos en la Edad Imperial"
+# Cavalry Archers cost -10/20% in Castle/Imperial Age
+
+[[civ]]
+id = "Incas"
+
+[[civ.bonus]]
+kind = "population_add"
+building = 70
+value = 5
+text = "Las casas y los asentamientos proporcionan +5 de espacio de población"
+# Houses and Settlements provide +5 population space
+
+[[civ.bonus]]
+kind = "building_cost_mult"
+resources = ["stone"]
+value = 0.85
+text = "El coste de piedra de los edificios se reduce un 15 %"
+# Buildings cost -15% stone
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+trained_at = [12, 87, 101, 49, 82]
+resources = ["food"]
+by_age = { Dark = 0.85, Feudal = 0.80, Castle = 0.75, Imperial = 0.70 }
+text = "El coste de comida de las unidades militares se reduce un 15 %/20 %/25 % y 30 % en la Edad Oscura, la Edad Feudal, la Edad de los Castillos y la Edad Imperial, respectivamente"
+# Military Units cost -15/20/25/30% food in Dark/Feudal/Castle/Imperial Age
+
+[[civ]]
+id = "Italians"
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+techs = [101, 102, 103]
+by_age = { Dark = 0.85 }
+text = "Avanzar a la siguiente edad cuesta un 15 % menos"
+# Advancing to the next Age costs -15%
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+classes = [23]
+by_age = { Dark = 0.8 }
+text = "Las unidades de pólvora cuestan un 20 % menos"
+# Gunpowder Units cost -20%
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+researched_at = [45, 209]
+by_age = { Dark = 0.75 }
+text = "Las tecnologías de los muelles y de la universidad cuestan un 25 % menos"
+# Dock and University technologies cost -25%
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+units = [13]
+by_age = { Dark = 0.85 }
+text = "Los buques de pesca cuestan un 15 % menos"
+# Fishing Ships cost -15%
+
+[[civ]]
+id = "Japanese"
+
+[[civ.bonus]]
+kind = "building_cost_mult"
+buildings = [68, 562, 584]
+value = 0.5
+text = "Los molinos y los campamentos mineros/madereros cuestan un 50 % menos"
+# Mills, Lumber- and Mining Camps cost -50%
+
+[[civ]]
+id = "Jurchens"
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+researched_at = [49]
+resources = ["wood"]
+by_age = { Dark = 0.25 }
+approximate = true  # solo las del taller de asedio
+text = "Las mejoras de asedio y fortificación cuestan un 75 % menos de madera y se investigan un 100 % más rápido"
+# Siege and Fortification upgrades cost -75% wood and research +100% faster
+
+[[civ]]
+id = "Khitans"
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+techs = [218]
+by_age = { Dark = 0.5 }
+approximate = true  # "disponible en Castillos" no se simula
+text = "Mejora del arquero de caballería pesada disponible en la Edad de los Castillos y cuesta un 50 % menos"
+# Heavy Cavalry Archer upgrade available in Castle Age and costs -50%
+
+[[civ]]
+id = "Khmer"
+
+[[civ.bonus]]
+kind = "no_age_buildings"
+text = "No se necesitan edificios para avanzar a la siguiente edad o para desbloquear otros edificios"
+# No buildings required to advance to the next Age or to unlock other buildings
+
+[[civ]]
+id = "Koreans"
+
+[[civ.bonus]]
+kind = "rate_mult"
+tasks = ["stone_miner"]
+value = 1.20
+text = "Los canteros trabajan un +20 % más rápido"
+# Stone miners work +20% faster
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+classes = [1, 15]
+resources = ["wood"]
+by_age = { Dark = 0.5 }
+approximate = true  # "soldados a distancia" ≈ clase arquero
+text = "Los soldados a distancia y la infantería cuestan un 50 % menos de madera"
+# Ranged Soldiers and Infantry cost -50% wood
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [211, 212, 219]
+text = "Mejoras de armadura para arquero y torres gratis (la torre de bombarda requiere Química)"
+# Archer armor and tower upgrades free (Bombard Tower requires Chemistry)
+
+[[civ]]
+id = "Lithuanians"
+
+[[civ.bonus]]
+kind = "start_resources_add"
+resources = { food = 100 }
+text = "Cada centro urbano proporciona +100 de comida"
+# Each Town Center provides +100 food
+
+[[civ.bonus]]
+kind = "building_reward"
+buildings = [109]
+resources = { food = 100 }
+text = "Cada centro urbano proporciona +100 de comida"
+# Each Town Center provides +100 food
+
+[[civ]]
+id = "Magyars"
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+units = [448, 546, 441]
+by_age = { Dark = 0.85 }
+text = "La línea de caballería de exploración cuesta un 15 % menos"
+# Scout Cavalry-line costs -15%
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [67, 68, 75]
+text = "Mejoras de ataque cuerpo a cuerpo gratis"
+# Melee attack upgrades free
+
+[[civ]]
+id = "Malay"
+
+[[civ.bonus]]
+kind = "research_speed_mult"
+techs = [101, 102, 103]
+value = 1.66
+text = "Avanzas a la siguiente edad un 66 % más rápido"
+# Advancing to the next Age is +66% faster
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [74, 76, 77]
+text = "Mejoras de armadura de infantería gratuitas"
+# Infantry armor upgrades free
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+units = [1132, 1134]
+by_age = { Castle = 0.75, Imperial = 0.65 }
+text = "Los elefantes de combate cuestan un 25/35 % menos en la Edad de los Castillos y en la Edad Imperial"
+# Battle Elephants cost -25/35% in Castle/Imperial Age
+
+[[civ]]
+id = "Malians"
+
+[[civ.bonus]]
+kind = "building_cost_mult"
+resources = ["wood"]
+value = 0.85
+text = "Los edificios cuestan un 15 % menos de madera"
+# Buildings cost -15% wood
+
+[[civ.bonus]]
+kind = "rate_mult"
+tasks = ["gold_miner"]
+value = 1.10
+approximate = true  # entregar +10 % ≈ recolectar +10 %
+text = "Los aldeanos depositan un 10 % más de oro"
+# Villagers drop off +10% more gold
+
+[[civ]]
+id = "Mapuche"
+
+[[civ.bonus]]
+kind = "rate_mult"
+tasks = ["forager"]
+value = 1.25
+approximate = true  # entregar +25 % ≈ recolectar +25 %
+text = "Los recolectores entregan un 25 % más de comida"
+# Foragers drop off +25% food
 
 [[civ]]
 id = "Mayans"
@@ -63,20 +610,357 @@ id = "Mayans"
 kind = "start_villagers_add"
 value = 1
 text = "Comienzan con 1 aldeano más, pero con 50 menos de comida"
+# Start with +1 Villager, but -50 food
 
 [[civ.bonus]]
 kind = "start_resources_add"
 resources = { food = -50 }
 text = "Comienzan con 1 aldeano más, pero con 50 menos de comida"
+# Start with +1 Villager, but -50 food
 
 [[civ.bonus]]
 kind = "source_amount_mult"
 value = 1.15
 text = "Los recursos duran un 15 % más"
+# Resources last +15% longer
 
 [[civ.bonus]]
 kind = "unit_cost_mult"
-units = [4, 24, 492]   # línea del arquero (arquero, ballestero, arbalestero)
+units = [4, 24, 492]
 by_age = { Feudal = 0.9, Castle = 0.8, Imperial = 0.7 }
-approximate = true     # "arqueros a pie": se aplica a la línea del arquero
-text = "El coste de los arqueros a pie se reduce un 10 %/20 %/30 % en la Edad Feudal, la Edad de los Castillos y la Edad Imperial"
+text = "El coste de los arqueros a pie se reduce un 10 %/20 %/30 % en la Edad Feudal, la Edad de los Castillos y la Edad Imperial, respectivamente"
+# Foot Archers cost -10/20/30% in Feudal/Castle/Imperial Age
+
+[[civ]]
+id = "Mongols"
+
+[[civ.bonus]]
+kind = "rate_mult"
+tasks = ["hunter"]
+value = 1.40
+text = "Los cazadores trabajan un 40 % más rápido"
+# Hunters work +40% faster
+
+[[civ]]
+id = "Muisca"
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+techs = [101, 102, 103]
+resources = ["gold"]
+by_age = { Dark = 0.5 }
+text = "Avanzar a la siguiente edad cuesta -50 % de oro"
+# Advancing to the next Age costs -50% gold
+
+[[civ.bonus]]
+kind = "source_amount_mult"
+pools = ["gold"]
+value = 1.15
+text = "Las fuentes de oro naturales duran un 15 % más"
+# Natural gold sources last +15% longer
+
+[[civ]]
+id = "Persians"
+
+[[civ.bonus]]
+kind = "start_resources_add"
+resources = { wood = 50, food = 50 }
+text = "Empieza con +50 de madera y comida"
+# Start with +50 wood and +50 food
+
+[[civ.bonus]]
+kind = "production_speed_mult"
+buildings = [109, 45]
+by_age = { Dark = 1.05, Feudal = 1.10, Castle = 1.15, Imperial = 1.20 }
+text = "Los centros urbanos y los muelles ganan un 100 % más de PR y trabajan un 5/10/15/20 % más rápido en la Edad Oscura, la Edad Feudal, la Edad de los Castillos, y la Edad Imperial, respectivamente"
+# Town Centers and Docks +100% HP and work +5/10/15/20% faster in Dark/Feudal/Castle/Imperial Age
+
+[[civ]]
+id = "Poles"
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+techs = [435, 254, 428]
+resources = ["food"]
+by_age = { Dark = 0.5 }
+text = "Las mejoras Pureza de sangre y la línea de caballería de exploración cuestan un 50 % menos de comida"
+# Bloodlines and Scout Cavalry-line upgrades cost -50% food
+
+[[civ]]
+id = "Portuguese"
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+resources = ["gold"]
+by_age = { Dark = 0.8 }
+text = "Todas las unidades cuestan un 20 % menos de oro"
+# All units cost -20% gold
+
+[[civ.bonus]]
+kind = "research_speed_mult"
+value = 1.25
+text = "Las tecnologías se desarrollan un 25 % más rápido"
+# Technologies research +25% faster
+
+[[civ]]
+id = "Romans"
+
+[[civ.bonus]]
+kind = "rate_mult"
+tasks = ["*"]
+value = 1.05
+text = "Los aldeanos recolectan, construyen y reparan un 5 % más rápido"
+# Villagers gather, build, and repair +5% faster
+
+[[civ.bonus]]
+kind = "build_speed_mult"
+value = 1.05
+text = "Los aldeanos recolectan, construyen y reparan un 5 % más rápido"
+# Villagers gather, build, and repair +5% faster
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+units = [279, 542]
+resources = ["gold"]
+by_age = { Dark = 0.5 }
+text = "Los escorpiones cuestan un 50 % menos de oro"
+# Scorpions cost -50% gold
+
+[[civ]]
+id = "Saracens"
+
+[[civ.bonus]]
+kind = "building_cost_add"
+buildings = [84]
+resources = { wood = -100 }
+text = "La tarifa de mercado cuesta solo un 5 %; los mercados cuestan 100 menos de madera"
+# Market trading fee only 5%; Markets cost -100 wood
+
+[[civ]]
+id = "Saxons"
+
+[[civ.bonus]]
+kind = "building_reward"
+buildings = [68, 562, 584]
+resources = { food = 35, stone = 10 }
+text = "Los molinos, los campamentos madereros y los campamentos mineros proporcionan +35 de comida y +10 de piedra al construirlos"
+# Mills, Lumber- and Mining Camps provide +35 food and +10 stone when built
+
+[[civ]]
+id = "Shu"
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+researched_at = [87]
+by_age = { Dark = 0.75 }
+text = "Las tecnologías de los arqueros de la galería de tiro con arco y del herrero cuestan un 25 % menos"
+# Archery Unit technologies at the Archery Range and Blacksmith cost -25%
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+techs = [199, 200, 201, 211, 212, 219]
+by_age = { Dark = 0.75 }
+text = "Las tecnologías de los arqueros de la galería de tiro con arco y del herrero cuestan un 25 % menos"
+# Archery Unit technologies at the Archery Range and Blacksmith cost -25%
+
+[[civ]]
+id = "Sicilians"
+
+[[civ.bonus]]
+kind = "start_resources_add"
+resources = { stone = 100 }
+text = "Se empieza con +100 de piedra"
+# Start with +100 stone
+
+[[civ.bonus]]
+kind = "farm_tech_mult"
+value = 2.25
+text = "Las mejoras de las granjas proporcionan un 125 % de comida adicional"
+# Farm upgrades provide +125% additional food
+
+[[civ.bonus]]
+kind = "build_speed_mult"
+buildings = [109]
+value = 2.0
+text = "Las fortificaciones se construyen un 50 % más rápido y los centros urbanos un 100 % más rápido"
+# Fortifications built +50% faster; Town Centers built +100% faster
+
+[[civ]]
+id = "Slavs"
+
+[[civ.bonus]]
+kind = "rate_mult"
+tasks = ["farmer"]
+value = 1.15
+text = "Los agricultores trabajan un +15 % más rápido"
+# Farmers work +15% faster
+
+[[civ.bonus]]
+kind = "unit_cost_mult"
+trained_at = [49]
+by_age = { Dark = 0.85 }
+text = "Las unidades del taller de maquinaria de asedio son un 15 % más baratas"
+# Siege Workshop Units cost -15%
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [602, 875]
+text = "Incendiarismo y gambesones gratis"
+# Arson, Gambesons free
+
+[[civ]]
+id = "Spanish"
+
+[[civ.bonus]]
+kind = "build_speed_mult"
+value = 1.30
+text = "Los constructores trabajan un +30 % más rápido"
+# Builders work +30% faster
+
+[[civ.bonus]]
+kind = "research_reward"
+resources = { gold = 20 }
+text = "Recibes +20 de oro por cada tecnología investigada"
+# Receive +20 gold for each technology researched
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+researched_at = [103]
+resources = ["gold"]
+by_age = { Dark = 0.0 }
+text = "Las mejoras del herrero no cuestan oro"
+# Blacksmith upgrades cost no gold
+
+[[civ]]
+id = "Tatars"
+
+[[civ.bonus]]
+kind = "source_amount_mult"
+pools = ["sheep"]
+value = 1.5
+text = "El ganado dura un 50 % más"
+# Livestock animals last +50% longer
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [437, 436]
+text = "Tácticas de los partias y dactileras gratis"
+# Thumb Ring, Parthian Tactics free
+
+[[civ]]
+id = "Teutons"
+
+[[civ.bonus]]
+kind = "building_cost_mult"
+buildings = [50]
+value = 0.6
+text = "Las granjas cuestan un 40 % menos"
+# Farms cost -40%
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [322, 441]
+text = "Matacanes, Hierba medicinal gratuitas"
+# Murder Holes, Herbal Medicine free
+
+[[civ]]
+id = "Tupi"
+
+[[civ.bonus]]
+kind = "start_resources_add"
+resources = { food = 25, wood = 25, gold = 25, stone = 25 }
+text = "Comienza con 25 más de cada recurso"
+# Start with +25 of each resource
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+researched_at = [87, 12]
+resources = ["food"]
+by_age = { Dark = 0.5 }
+text = "Las mejoras Galería de tiro con arco y Cuarteles cuestan un 50 % menos de comida"
+# Archery Range and Barracks upgrades cost -50% food
+
+[[civ]]
+id = "Turks"
+
+[[civ.bonus]]
+kind = "rate_mult"
+tasks = ["gold_miner"]
+value = 1.25
+text = "Los mineros de oro trabajan un 25 % más rápido"
+# Gold miners work +25% faster
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [254, 428]
+text = "La caballería de exploración obtiene 1 de armadura antiperforación y mejoras gratis"
+# Scout Cavalry-line +1 pierce armor and upgrades free
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [47]
+text = "Química gratis; las tecnologías de la pólvora cuestan un 50 % menos"
+# Chemistry free; Gunpowder technologies costs -50%
+
+[[civ]]
+id = "Vietnamese"
+
+[[civ.bonus]]
+kind = "tech_cost_mult"
+techs = [202, 203, 221, 55, 182, 278, 279, 14, 13, 12, 213, 249]
+resources = ["wood"]
+by_age = { Dark = 0.0 }
+approximate = true  # lista de mejoras económicas aproximada
+text = "Las mejoras económicas no cuestan madera y se investigarán un +100 % más rápido"
+# Economic upgrades cost no wood and research +100% faster
+
+[[civ.bonus]]
+kind = "research_speed_mult"
+techs = [202, 203, 221, 55, 182, 278, 279, 14, 13, 12, 213, 249]
+value = 2.0
+approximate = true
+text = "Las mejoras económicas no cuestan madera y se investigarán un +100 % más rápido"
+# Economic upgrades cost no wood and research +100% faster
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [315]
+text = "Leva gratis"
+# Conscription free
+
+[[civ]]
+id = "Vikings"
+
+[[civ.bonus]]
+kind = "tech_free"
+techs = [213, 249]
+text = "La carretilla y el carro de mano son gratis"
+# Wheelbarrow, Hand Cart free
+
+[[civ]]
+id = "Wei"
+
+[[civ.bonus]]
+kind = "tech_villagers"
+techs = [202, 203, 221, 55, 182, 278, 279, 14, 13, 12, 213, 249]
+value = 1
+approximate = true  # lista de mejoras económicas aproximada
+text = "Recibe un aldeano gratis por cada mejora de cada economía investigada"
+# Receive one free Villager for each economic upgrade researched
+
+[[civ]]
+id = "Wu"
+
+[[civ.bonus]]
+kind = "building_reward"
+buildings = [12, 87, 101, 49, 45]
+resources = { food = 55 }
+text = "Los muelles y los edificios de producción militar proporcionan +55 de comida al construirlos."
+# Military production buildings and Docks provide +55 food when built
+
+[[civ.bonus]]
+kind = "build_speed_mult"
+buildings = [70]
+value = 2.0
+text = "Las casas se construyen un +100 % más rápido."
+# Houses built +100% faster
