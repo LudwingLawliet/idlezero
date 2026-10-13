@@ -3,11 +3,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { AppInfo, Goal, OptimizeView, Plan, PlanView } from "./types";
 import { makeLabels } from "./labels";
 import { layoutMap } from "./layout";
-import EconomyMap, { Selection } from "./EconomyMap";
+import EconomyMap, { MapLegend, Selection } from "./EconomyMap";
 import SidePanel from "./SidePanel";
 import ListView from "./ListView";
 import Calculator from "./Calculator";
 import GoalBuilder, { emptyGoal } from "./GoalBuilder";
+import Shortcuts from "./Shortcuts";
 import "./App.css";
 
 const RULES_URL = "https://www.xbox.com/en-US/developers/rules";
@@ -43,6 +44,7 @@ export default function App() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [planView, setPlanView] = useState<PlanView | null>(null);
   const [planBusy, setPlanBusy] = useState(false);
+  const [help, setHelp] = useState(false);
 
   useEffect(() => {
     invoke<AppInfo>("app_info", { lang }).then(setInfo, (e) => setError(String(e)));
@@ -87,6 +89,26 @@ export default function App() {
       .then(setPlanView, (e) => setError(String(e)))
       .finally(() => setPlanBusy(false));
   };
+
+  // Atajos globales: pestañas, calcular, ayuda.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      const typing = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        run();
+        return;
+      }
+      if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
+      const tabs: Record<string, "map" | "list" | "calc"> = { "1": "map", "2": "list", "3": "calc" };
+      if (tabs[e.key]) setTab(tabs[e.key]);
+      else if (e.key === "?") setHelp((h) => !h);
+      else if (e.key === "Escape") setHelp(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [run]);
 
   const mapInfo = info?.maps.find((m) => m.id === map);
   const labels = useMemo(() => (info ? makeLabels(info, lang, mapInfo) : null), [info, lang, mapInfo]);
@@ -160,7 +182,10 @@ export default function App() {
             <button className={tab === "calc" ? "active" : ""} onClick={() => setTab("calc")}>
               {L.tabCalc}
             </button>
-            {tab === "map" && <span className="muted legend">{L.zoomHint}</span>}
+            {tab === "map" && <MapLegend labels={labels} />}
+            <button className="help-btn" title={`${L.shortcuts} · ${L.zoomHint}`} onClick={() => setHelp(true)}>
+              ?
+            </button>
           </div>
           <div className={`view${busy || planBusy ? " busy" : ""}`}>
             {tab === "map" && view && timeline && layout && (
@@ -207,6 +232,8 @@ export default function App() {
           />
         )}
       </main>
+
+      {help && <Shortcuts labels={labels} onClose={() => setHelp(false)} />}
 
       <footer className="legal">
         Age of Empires II © Microsoft Corporation. IdleZero was created under Microsoft's "

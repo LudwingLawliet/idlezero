@@ -7,6 +7,8 @@ export interface Labels {
   t: (key: string) => string;
   pool: (id: string) => string;
   poolIcon: (id: string) => string;
+  /** Recurso que da un pool (food, wood, gold, stone). */
+  poolResource: (id: string) => "food" | "wood" | "gold" | "stone";
   /** Nombre e ícono de una entidad por su clave (nombre corto o id). */
   name: (kind: Kind, key: string) => string;
   icon: (kind: Kind, key: string) => string;
@@ -29,6 +31,7 @@ export function makeLabels(info: AppInfo, lang: string, map: MapInfo | undefined
     ui: u,
     t,
     pool,
+    poolResource: (id) => (id === "farms" ? "food" : map?.pools.find((p) => p.id === id)?.resource ?? "food"),
     poolIcon: (id) => {
       if (id === "farms") return `/img/building/${FARM_ID}.png`;
       const r = map?.pools.find((p) => p.id === id)?.resource ?? "food";
