@@ -8,6 +8,8 @@
 #   --key K      pulsa una tecla (sintaxis de xdotool, p. ej. Down, Return),
 #                en orden junto con los clics.
 #   --sleep SEG  pausa entre acciones (p. ej. esperar un cálculo).
+#   --shot RUTA  captura intermedia en ese momento (para animaciones).
+#   --release    usa (y compila) el binario optimizado: cálculos más rápidos.
 #   --after SEG  espera tras los clics antes de capturar (por defecto 1).
 #   --scroll X,Y,N  gira la rueda N pasos hacia abajo en X,Y (tras los clics).
 # Requiere: xorg-x11-server-Xvfb e ImageMagick (import).
@@ -16,6 +18,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 wait_s=5
 build=1
+release=0
 clicks=()
 scrolls=()
 after=1
@@ -27,6 +30,8 @@ while [ $# -gt 0 ]; do
     --click) clicks+=("c:$2"); shift 2 ;;
     --key) clicks+=("k:$2"); shift 2 ;;
     --sleep) clicks+=("s:$2"); shift 2 ;;
+    --shot) clicks+=("p:$2"); shift 2 ;;
+    --release) release=1; shift ;;
     --after) after="$2"; shift 2 ;;
     --scroll) scrolls+=("$2"); shift 2 ;;
     *) out="$1"; shift ;;
@@ -40,9 +45,14 @@ command -v import >/dev/null || { echo "Falta ImageMagick (import)" >&2; exit 1;
 
 if [ "$build" = 1 ]; then
   # Binario de depuración con el frontend embebido (no necesita Vite).
-  (cd "$root/app" && npm run tauri build -- --no-bundle --debug >/dev/null)
+  if [ "$release" = 1 ]; then
+    (cd "$root/app" && npm run tauri build -- --no-bundle >/dev/null)
+  else
+    (cd "$root/app" && npm run tauri build -- --no-bundle --debug >/dev/null)
+  fi
 fi
 bin="$root/target/debug/idlezero"
+[ "$release" = 1 ] && bin="$root/target/release/idlezero"
 
 display=":99"
 while [ -e "/tmp/.X11-unix/X${display#:}" ]; do display=":$(( ${display#:} + 1 ))"; done
@@ -66,7 +76,9 @@ pids+=($!)
 sleep "$wait_s"
 
 for a in "${clicks[@]}"; do
-  if [ "${a%%:*}" = s ]; then
+  if [ "${a%%:*}" = p ]; then
+    import -display "$display" -window root "${a#p:}"
+  elif [ "${a%%:*}" = s ]; then
     sleep "${a#s:}"
   elif [ "${a%%:*}" = k ]; then
     DISPLAY="$display" xdotool key "${a#k:}"
