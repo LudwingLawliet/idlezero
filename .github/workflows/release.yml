@@ -78,9 +78,12 @@ jobs:
           ARTIFACTS: ${{ steps.tauri.outputs.artifactPaths }}
         run: |
           out="SHA256SUMS-${RUNNER_OS}.txt"
-          echo "$ARTIFACTS" | jq -r '.[]' | while read -r f; do
+          # En Windows jq termina las líneas en CRLF: quitar el \r y usar barras /.
+          echo "$ARTIFACTS" | jq -r '.[]' | tr -d '\r' | while read -r f; do
             f="${f//\\//}"
-            [ -f "$f" ] && (cd "$(dirname "$f")" && sha256sum "$(basename "$f")")
+            if [ -f "$f" ]; then
+              (cd "$(dirname "$f")" && sha256sum "$(basename "$f")")
+            fi
           done > "$out"
           cat "$out"
           gh release upload "$GITHUB_REF_NAME" "$out" --clobber
