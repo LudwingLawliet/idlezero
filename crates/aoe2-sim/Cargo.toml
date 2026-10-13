@@ -3,6 +3,10 @@ name = "aoe2-sim"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Simulador económico determinista (1 s de resolución)"
 
 [dependencies]
 aoe2-data.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true

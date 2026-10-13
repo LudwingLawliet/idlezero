@@ -1,0 +1,66 @@
+# Reglas del juego que no vienen en aoe2techtree.
+# Escenario neutro: sin bonos de civilización.
+schema_version = 1
+
+[population]
+per_town_center = 5
+per_house = 5
+max = 200
+source = "https://ageofempires.fandom.com/wiki/Population_(Age_of_Empires_II)"
+approximate = false
+
+[farm]
+food = 175
+auto_reseed = true
+source = "https://ageofempires.fandom.com/wiki/Farm_(Age_of_Empires_II)"
+approximate = false
+
+# Para investigar una edad hacen falta `count` edificios distintos de la lista,
+# terminados. Edad Feudal: 2 edificios de la Oscura; Castillos: 2 de la Feudal.
+[[age_requirement]]
+tech = 101      # Edad Feudal
+count = 2
+buildings = [12, 68, 562, 584, 45]   # Cuartel, Molino, Camp. maderero, Camp. minero, Puerto
+source = "https://ageofempires.fandom.com/wiki/Feudal_Age_(Age_of_Empires_II)"
+approximate = false
+
+[[age_requirement]]
+tech = 102      # Edad de los Castillos
+count = 2
+buildings = [103, 84, 87, 101]       # Herrería, Mercado, Galería de tiro, Establo
+source = "https://ageofempires.fandom.com/wiki/Castle_Age_(Age_of_Empires_II)"
+approximate = false
+
+# Tecnologías de edad: al terminar, el jugador pasa a la edad indicada.
+[ages]
+101 = "Feudal"
+102 = "Castle"
+103 = "Imperial"
+
+# Nombres cortos para las órdenes de construcción (data/build_orders/).
+[names.buildings]
+town_center = 109
+house = 70
+mill = 68
+lumber_camp = 562
+mining_camp = 584
+farm = 50
+barracks = 12
+market = 84
+blacksmith = 103
+archery_range = 87
+stable = 101
+
+[names.techs]
+loom = 22
+feudal_age = 101
+castle_age = 102
+imperial_age = 103
+double_bit_axe = 202
+bow_saw = 203
+horse_collar = 14
+heavy_plow = 13
+wheelbarrow = 213
+hand_cart = 249
+gold_mining = 55
+stone_mining = 278

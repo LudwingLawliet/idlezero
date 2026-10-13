@@ -1,0 +1,158 @@
+# Fast Castle 27+2 (escenario neutro, Arabia neutra).
+# 26 aldeanos + explorador = 27 de población al hacer clic en Feudal; 2 aldeanos
+# más en Feudal y clic en Castillos. Mercado + Herrería como edificios Feudales;
+# Hacha de doble filo en Feudal; Collera al llegar a Castillos.
+# Basada en: https://ageofnotes.com/build-orders/fc-boom-build-order-aoe2/
+# (pasos intermedios ajustados a mano; aproximada).
+name = "Fast Castle 27+2"
+map = "arabia_neutra"
+default_pool = "forest"
+
+# --- Aldeanos iniciales: 2 a una casa, 1 a otra; después ovejas ---
+[[start]]
+villagers = 2
+build = "house"
+then = "sheep"
+
+[[start]]
+villagers = 1
+build = "house"
+then = "sheep"
+
+# --- Aldeanos nuevos ---
+[[villager]]
+n = 4
+to = 6
+pool = "sheep"
+
+[[villager]]
+n = 7
+build = "lumber_camp"
+then = "forest"
+
+[[villager]]
+n = 8
+to = 10
+pool = "forest"
+
+[[villager]]
+n = 11
+pool = "boar"          # el primero atrae al jabalí
+
+[[villager]]
+n = 12
+build = "mill"
+at = "berries"
+then = "berries"
+
+[[villager]]
+n = 13
+to = 15
+pool = "berries"
+
+[[villager]]
+n = 16
+to = 17
+pool = "boar"
+
+[[villager]]
+n = 18
+to = 23
+pool = "forest"
+
+[[villager]]
+n = 24
+build = "mining_camp"
+at = "gold"
+then = "gold"
+
+[[villager]]
+n = 25
+to = 26
+pool = "gold"
+
+[[villager]]
+n = 27
+to = 28
+pool = "forest"
+
+# --- Casas ---
+[[step]]
+when = { villagers = 10 }
+build = "house"
+from = "forest"
+
+[[step]]
+when = { villagers = 14 }
+build = "house"
+from = "forest"
+
+[[step]]
+when = { villagers = 18 }
+build = "house"
+from = "forest"
+
+[[step]]
+when = { villagers = 22 }
+build = "house"
+from = "forest"
+
+# --- Comida: ovejas -> jabalí -> ciervos -> granjas ---
+[[step]]
+when = { villagers = 15 }
+lure = "boar_2"
+from = "boar"
+
+[[step]]
+when = { pool_exhausted = "sheep" }
+from = "sheep"
+to = "boar"
+
+[[step]]
+when = { pool_exhausted = "boar" }
+from = "boar"
+to = "deer"
+
+[[step]]
+when = { pool_exhausted = "deer" }
+from = "deer"
+to = "farms"
+
+[[step]]
+when = { pool_exhausted = "berries" }
+from = "berries"
+to = "farms"
+
+# --- Feudal ---
+[[step]]
+when = { pop = 27 }
+research = "loom"
+
+[[step]]
+when = { pop = 27 }
+research = "feudal_age"
+
+[[step]]
+when = { age = "Feudal" }
+build = "market"
+builders = 3
+from = "forest"
+
+[[step]]
+when = { age = "Feudal" }
+build = "blacksmith"
+builders = 2
+from = "forest"
+
+[[step]]
+when = { age = "Feudal" }
+research = "double_bit_axe"
+
+[[step]]
+when = { researched = "castle_age" }
+research = "horse_collar"
+
+# --- Castillos ---
+[[step]]
+when = { pop = 29, age = "Feudal" }
+research = "castle_age"

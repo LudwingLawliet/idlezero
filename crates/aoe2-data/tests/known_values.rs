@@ -162,3 +162,39 @@ fn maps_parse_and_reference_known_tasks() {
     let lab = MapDef::load(&repo_data_dir().join("maps/laboratorio.toml")).unwrap();
     assert!(lab.sources.iter().all(|s| !["shepherd", "hunter", "forager"].contains(&s.task.as_str())));
 }
+
+#[test]
+fn rules_reference_existing_entities() {
+    let data = game_data();
+    let rules = aoe2_data::Rules::load(&repo_data_dir().join("rules.toml")).unwrap();
+    for (name, id) in &rules.names.buildings {
+        assert!(data.building(*id).is_some(), "edificio {name} = {id} no existe");
+    }
+    for (name, id) in &rules.names.techs {
+        assert!(data.tech(*id).is_some(), "tecnología {name} = {id} no existe");
+    }
+    for req in &rules.age_requirements {
+        assert!(data.tech(req.tech).is_some());
+        assert!(req.buildings.iter().all(|b| data.building(*b).is_some()));
+    }
+    assert_eq!(rules.age_of_tech(ids::FEUDAL_AGE), Some(Age::Feudal));
+    assert_eq!(rules.age_of_tech(ids::CASTLE_AGE), Some(Age::Castle));
+    assert_eq!(rules.population.per_house, 5);
+}
+
+#[test]
+fn modifiers_reference_existing_techs_and_tasks() {
+    let data = game_data();
+    let rates = GatherRates::load(&repo_data_dir().join("gather_rates.toml")).unwrap();
+    let mods = aoe2_data::Modifiers::load(&repo_data_dir().join("modifiers.toml")).unwrap();
+    for m in &mods.modifiers {
+        assert!(data.tech(m.tech).is_some(), "tecnología {} no existe", m.tech);
+        for t in &m.tasks {
+            assert!(rates.task(t).is_some(), "tarea desconocida {t}");
+        }
+    }
+    // Hacha de doble filo: +20 % madera.
+    let dba: Vec<_> = mods.for_tech(202).collect();
+    assert_eq!(dba.len(), 1);
+    assert_eq!(dba[0].value, 1.20);
+}

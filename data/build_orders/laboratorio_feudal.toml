@@ -1,0 +1,64 @@
+# Orden simple para el mapa Laboratorio: madera primero, granjas como comida,
+# casas a tiempo y Feudal a 22 de población. Sirve para probar el motor.
+name = "Laboratorio: Feudal con granjas"
+map = "laboratorio"
+default_pool = "forest"
+
+[[start]]
+villagers = 2
+build = "house"
+then = "farms"
+
+[[start]]
+villagers = 1
+build = "house"
+then = "forest"
+
+[[villager]]
+n = 4
+to = 7
+pool = "forest"
+
+[[villager]]
+n = 8
+to = 13
+pool = "farms"
+
+[[villager]]
+n = 14
+build = "lumber_camp"
+then = "forest"
+
+[[villager]]
+n = 15
+build = "mill"
+then = "farms"
+
+[[villager]]
+n = 16
+to = 18
+pool = "farms"
+
+[[villager]]
+n = 19
+to = 21
+pool = "gold"
+
+[[step]]
+when = { villagers = 9 }
+build = "house"
+from = "forest"
+
+[[step]]
+when = { villagers = 12 }
+build = "house"
+from = "forest"
+
+[[step]]
+when = { villagers = 16 }
+build = "house"
+from = "forest"
+
+[[step]]
+when = { pop = 22 }
+research = "feudal_age"

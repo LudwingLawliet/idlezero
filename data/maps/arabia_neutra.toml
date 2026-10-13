@@ -1,7 +1,11 @@
 # Arabia neutra (nivel 1): mapa abierto y plano con los recursos estándar de
 # inicio. Sin elevación, sin enemigos, sin bonos de civilización.
-# Cantidades según la Wiki de AoE; distancias = promedio estimado en casillas.
-# Todas las distancias son aproximadas hasta validarlas en partida.
+# Cantidades según la Wiki de AoE; distancias, tiempos de llegada de las ovejas
+# y de atracción de jabalíes = estimaciones propias, todas aproximadas hasta
+# validarlas en partida.
+#
+# `pool` agrupa fuentes que las órdenes tratan como una sola ("sheep" = todas
+# las ovejas). Dentro de un pool se recolecta en el orden de este archivo.
 name = "Arabia neutra"
 level = 1
 
@@ -12,20 +16,52 @@ town_centers = 1
 source = "https://ageofempires.fandom.com/wiki/Resources_(Age_of_Empires_II)"
 resources = { food = 200, wood = 200, gold = 100, stone = 200 }
 
+# Casillas que camina un constructor hasta cada tipo de edificio (aproximado).
+[build_walk_tiles]
+default = 4.0
+house = 4.0
+farm = 2.0
+mill = 8.0
+lumber_camp = 10.0
+mining_camp = 12.0
+market = 6.0
+blacksmith = 6.0
+
 [[source]]
-id = "sheep"
+id = "sheep_start"
+pool = "sheep"
 task = "shepherd"
-count = 8             # 4 junto al CU + 4 que encuentra el explorador
+count = 4             # las 4 que empiezan junto al CU
 amount = 100
 distance_tiles = 1.0  # se recolectan bajo el CU
 approximate = true
 
 [[source]]
-id = "boar"
+id = "sheep_scouted"
+pool = "sheep"
+task = "shepherd"
+count = 4             # 2 parejas que trae el explorador
+amount = 100
+arrives_at_s = 150
+distance_tiles = 1.0
+approximate = true
+
+[[source]]
+id = "boar_1"
+pool = "boar"
 task = "hunter"
-count = 2
 amount = 340
-distance_tiles = 1.0  # atraído al CU
+lure_seconds = 40     # ir a buscarlo y traerlo al CU
+distance_tiles = 1.0
+approximate = true
+
+[[source]]
+id = "boar_2"
+pool = "boar"
+task = "hunter"
+amount = 340
+lure_seconds = 40
+distance_tiles = 1.0
 approximate = true
 
 [[source]]
@@ -42,23 +78,23 @@ approximate = true
 id = "deer"
 task = "hunter"
 count = 3
-amount = 100
-distance_tiles = 10.0
-distance_with_drop_site = 1.5
-drop_site = 68        # molino junto a los ciervos (o empujarlos al CU)
+amount = 140          # ciervo en AoE2 DE
+arrives_at_s = 360    # empujados por el explorador hasta el CU
+distance_tiles = 1.5
 approximate = true
 
 [[source]]
 id = "forest"
 task = "lumberjack"
-distance_tiles = 12.0
+distance_tiles = 10.0
 distance_with_drop_site = 2.0
 drop_site = 562       # campamento maderero
 approximate = true
-note = "Bosque tratado como infinito; la distancia crece al talarlo (fase 2)."
+note = "Bosque tratado como infinito; no crece la distancia al talarlo."
 
 [[source]]
 id = "gold_main"
+pool = "gold"
 task = "gold_miner"
 count = 7
 amount = 800
@@ -69,6 +105,7 @@ approximate = true
 
 [[source]]
 id = "gold_secondary"
+pool = "gold"
 task = "gold_miner"
 count = 4
 amount = 800
@@ -79,6 +116,7 @@ approximate = true
 
 [[source]]
 id = "stone_main"
+pool = "stone"
 task = "stone_miner"
 count = 5
 amount = 350
@@ -89,6 +127,7 @@ approximate = true
 
 [[source]]
 id = "stone_secondary"
+pool = "stone"
 task = "stone_miner"
 count = 4
 amount = 350
@@ -100,8 +139,6 @@ approximate = true
 [[source]]
 id = "farms"
 task = "farmer"
-amount = 175
-distance_tiles = 0.0
-drop_site = 68
+distance_tiles = 0.0  # la tasa de granjero ya es efectiva (incluye la caminata)
 approximate = true
-note = "Comida por granja: https://ageofempires.fandom.com/wiki/Farm_(Age_of_Empires_II)"
+note = "Comida por granja en data/rules.toml."

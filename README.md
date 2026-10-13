@@ -2,7 +2,7 @@
 
 App de escritorio gratuita (Linux y Windows) que calcula, aldeano por aldeano, la ruta más rápida para cumplir un objetivo en Age of Empires II: Definitive Edition, y la muestra como un mapa de decisiones.
 
-Estado: **v0.0.1, Fases 0 y 1** (esqueleto de la app y datos del juego). Especificación completa en [docs/SPEC.md](docs/SPEC.md).
+Estado: **Fases 0–2**: esqueleto de la app, datos del juego y simulador económico determinista (Oscura → Castillos). Especificación completa en [docs/SPEC.md](docs/SPEC.md).
 
 ## Descargas
 
@@ -26,7 +26,12 @@ git clone https://github.com/SiegeEngineers/aoe2techtree.git vendor/aoe2techtree
 cargo run -p import          # regenera data/game_data.json
 cargo test --workspace
 cd app && npm install && npm run tauri dev
+
+# Simular una orden de construcción, tick a tick
+cargo run -p aoe2-sim --example run -- arabia_neutra fast_castle_27_2
 ```
+
+Las órdenes de construcción son archivos TOML en `data/build_orders/`; las reglas, mejoras económicas y mapas también viven en `data/`.
 
 Publicar una versión: `git tag v0.x.y && git push --tags`. GitHub Actions compila en Linux y Windows y crea un borrador de Release.
 

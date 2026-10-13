@@ -1,0 +1,22 @@
+# Tiempos de referencia de la comunidad para la Fast Castle 27+2.
+# Fuente: tabla de benchmarks de Age of Notes, nivel S+ (el mejor).
+# https://ageofnotes.com/build-orders/fc-boom-build-order-aoe2/
+#
+# La tabla no dice si son clics o llegadas; se interpretan como CLIC, porque
+# 27 de población con el CU sin parar da 10:00 de clic (23 aldeanos × 25 s +
+# Telar 25 s), y 10:05 es ese mínimo más unos segundos de reacción humana.
+# La llegada a Castillos se deriva: clic + 160 s de investigación.
+# No medido en partida propia: approximate = true.
+map = "arabia_neutra"
+build_order = "fast_castle_27_2"
+source = "https://ageofnotes.com/build-orders/fc-boom-build-order-aoe2/"
+approximate = true
+
+[reference]
+feudal_click = 605     # 10:05
+castle_click = 790     # 13:10
+castle_reached = 950   # 15:50 (derivado)
+
+[tolerance]
+castle_reached = 10    # criterio de la Fase 2 (spec)
+milestones = 20        # clics intermedios

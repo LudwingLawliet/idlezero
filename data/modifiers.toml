@@ -1,0 +1,91 @@
+# Efectos económicos de las tecnologías, como datos.
+# kind:
+#   rate_mult   multiplica la tasa de recolección de las tareas `tasks`
+#   carry_add   suma capacidad de carga a las tareas `tasks` (vacío = todas)
+#   carry_mult  multiplica la capacidad de carga (todas las tareas)
+#   speed_mult  multiplica la velocidad de los aldeanos
+#   farm_food_add  suma comida a cada granja nueva o resembrada
+# Escenario neutro: solo tecnologías, ningún bono de civilización.
+schema_version = 1
+
+[[modifier]]
+tech = 202  # Hacha de doble filo
+kind = "rate_mult"
+tasks = ["lumberjack"]
+value = 1.20
+source = "https://ageofempires.fandom.com/wiki/Double-Bit_Axe"
+approximate = true
+
+[[modifier]]
+tech = 203  # Sierra de arco
+kind = "rate_mult"
+tasks = ["lumberjack"]
+value = 1.20
+source = "https://ageofempires.fandom.com/wiki/Bow_Saw"
+approximate = true
+
+[[modifier]]
+tech = 55   # Minería de oro
+kind = "rate_mult"
+tasks = ["gold_miner"]
+value = 1.15
+source = "https://ageofempires.fandom.com/wiki/Gold_Mining"
+approximate = true
+
+[[modifier]]
+tech = 278  # Minería de piedra
+kind = "rate_mult"
+tasks = ["stone_miner"]
+value = 1.15
+source = "https://ageofempires.fandom.com/wiki/Stone_Mining"
+approximate = true
+
+[[modifier]]
+tech = 14   # Collera
+kind = "farm_food_add"
+value = 75
+source = "https://ageofempires.fandom.com/wiki/Horse_Collar"
+approximate = true
+
+[[modifier]]
+tech = 13   # Arado pesado
+kind = "farm_food_add"
+value = 125
+source = "https://ageofempires.fandom.com/wiki/Heavy_Plow"
+approximate = true
+
+[[modifier]]
+tech = 13   # Arado pesado: +1 de carga a los granjeros
+kind = "carry_add"
+tasks = ["farmer"]
+value = 1
+source = "https://ageofempires.fandom.com/wiki/Heavy_Plow"
+approximate = true
+
+[[modifier]]
+tech = 213  # Carretilla
+kind = "speed_mult"
+value = 1.10
+source = "https://ageofempires.fandom.com/wiki/Wheelbarrow"
+approximate = true
+
+[[modifier]]
+tech = 213
+kind = "carry_mult"
+value = 1.25
+source = "https://ageofempires.fandom.com/wiki/Wheelbarrow"
+approximate = true
+
+[[modifier]]
+tech = 249  # Carro de mano
+kind = "speed_mult"
+value = 1.10
+source = "https://ageofempires.fandom.com/wiki/Hand_Cart"
+approximate = true
+
+[[modifier]]
+tech = 249
+kind = "carry_mult"
+value = 1.20  # 12.5 -> 15 tras Carretilla
+source = "https://ageofempires.fandom.com/wiki/Hand_Cart"
+approximate = true

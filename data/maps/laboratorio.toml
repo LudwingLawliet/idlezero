@@ -13,6 +13,10 @@ town_centers = 1
 source = "https://ageofempires.fandom.com/wiki/Resources_(Age_of_Empires_II)"
 resources = { food = 200, wood = 200, gold = 100, stone = 200 }
 
+# Casillas que camina un constructor hasta el edificio (valor fijo del laboratorio).
+[build_walk_tiles]
+default = 3.0
+
 [[source]]
 id = "forest"
 task = "lumberjack"
@@ -37,8 +41,6 @@ note = "Valor fijo del laboratorio, no medido."
 [[source]]
 id = "farms"
 task = "farmer"
-amount = 175          # comida por granja en AoE2 DE, sin mejoras
-distance_tiles = 0.0  # la tasa de granjero ya es efectiva
-drop_site = 68        # requiere molino o CU
+distance_tiles = 0.0  # la tasa de granjero ya es efectiva (incluye la caminata)
 approximate = true
-note = "Comida por granja: https://ageofempires.fandom.com/wiki/Farm_(Age_of_Empires_II)"
+note = "Comida por granja en data/rules.toml."

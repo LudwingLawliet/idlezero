@@ -8,11 +8,15 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-pub mod rates;
 pub mod maps;
+pub mod modifiers;
+pub mod rates;
+pub mod rules;
 
 pub use maps::MapDef;
+pub use modifiers::Modifiers;
 pub use rates::GatherRates;
+pub use rules::Rules;
 
 /// Versión del esquema de `game_data.json`. Subirla al cambiar los tipos.
 pub const SCHEMA_VERSION: u32 = 1;
