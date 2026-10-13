@@ -20,7 +20,25 @@ const MAPS: &[(&str, &str)] = &[
 /// (código, contenido) de cada idioma; el primero es el de respaldo.
 pub const LANGS: &[(&str, &str)] = &[("en", data!("i18n/en.toml")), ("es", data!("i18n/es.toml"))];
 
+#[derive(serde::Deserialize, Clone)]
+pub struct Tip {
+    pub id: String,
+    pub context: Vec<String>,
+    #[serde(default)]
+    pub keys: Vec<String>,
+    #[serde(default)]
+    pub keys_en: Vec<String>,
+    pub es: String,
+    pub en: String,
+}
+
+#[derive(serde::Deserialize)]
+struct TipsFile {
+    tip: Vec<Tip>,
+}
+
 pub struct Bundle {
+    pub tips: Vec<Tip>,
     pub civs: Vec<aoe2_data::civs::CivInfo>,
     pub civ_bonuses: Vec<aoe2_data::civs::CivBonuses>,
     pub data: GameData,
@@ -38,6 +56,7 @@ fn parse<T: serde::de::DeserializeOwned>(what: &str, text: &str) -> T {
 pub fn bundle() -> &'static Bundle {
     static B: OnceLock<Bundle> = OnceLock::new();
     B.get_or_init(|| Bundle {
+        tips: parse::<TipsFile>("tips", data!("tips.toml")).tip,
         civs: aoe2_data::civs::parse_civs(data!("civs.json")).expect("civs.json embebido"),
         civ_bonuses: aoe2_data::civs::parse_bonuses(data!("civ_bonuses.toml")).expect("civ_bonuses.toml embebido"),
         data: serde_json::from_str(data!("game_data.json")).expect("game_data.json embebido"),

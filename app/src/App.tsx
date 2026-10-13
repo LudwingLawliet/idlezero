@@ -10,6 +10,7 @@ import Calculator from "./Calculator";
 import GoalBuilder, { emptyGoal } from "./GoalBuilder";
 import Shortcuts from "./Shortcuts";
 import CivPicker from "./CivPicker";
+import Dashboard from "./Dashboard";
 import "./App.css";
 
 const RULES_URL = "https://www.xbox.com/en-US/developers/rules";
@@ -39,7 +40,7 @@ export default function App() {
   const [view, setView] = useState<OptimizeView | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"map" | "list" | "calc">("map");
+  const [tab, setTab] = useState<"map" | "dash" | "list" | "calc">("map");
   const [selected, setSelected] = useState<Selection>(null);
   const [cursor, setCursor] = useState<number | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -108,7 +109,7 @@ export default function App() {
         return;
       }
       if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
-      const tabs: Record<string, "map" | "list" | "calc"> = { "1": "map", "2": "list", "3": "calc" };
+      const tabs: Record<string, "map" | "dash" | "list" | "calc"> = { "1": "map", "2": "dash", "3": "list", "4": "calc" };
       if (tabs[e.key]) setTab(tabs[e.key]);
       else if (e.key === "?") setHelp((h) => !h);
       else if (e.key === "c" || e.key === "C") setCivOpen(true);
@@ -195,6 +196,9 @@ export default function App() {
             <button className={tab === "map" ? "active" : ""} onClick={() => setTab("map")}>
               {L.tabMap}
             </button>
+            <button className={tab === "dash" ? "active" : ""} onClick={() => setTab("dash")}>
+              {L.tabDash}
+            </button>
             <button className={tab === "list" ? "active" : ""} onClick={() => setTab("list")}>
               {L.tabList}
             </button>
@@ -221,6 +225,9 @@ export default function App() {
                 civIcon={civInfo?.icon}
               />
             )}
+            {tab === "dash" && view && timeline && layout && (
+              <Dashboard result={view.result} timeline={timeline} layout={layout} labels={labels} info={info} goalTime={goalTime} />
+            )}
             {tab === "list" && view && timeline && (
               <ListView
                 tree={planView ? [] : view.result.tree}
@@ -234,7 +241,7 @@ export default function App() {
             {tab === "calc" && mapInfo && <Calculator map={mapInfo} labels={labels} civ={civ} />}
           </div>
         </section>
-        {view && plan && timeline && layout && tab !== "calc" && (
+        {view && plan && timeline && layout && tab !== "calc" && tab !== "dash" && (
           <SidePanel
             result={view.result}
             timeline={timeline}
@@ -248,6 +255,7 @@ export default function App() {
             goal={view.result.goal}
             plan={plan}
             civ={civ}
+            tips={info.tips}
             planBusy={planBusy}
             onPlan={choosePlan}
           />

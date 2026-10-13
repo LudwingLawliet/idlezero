@@ -1,0 +1,72 @@
+# Consejos de juego ligados a momentos de la orden. Las teclas son las de AoE2
+# DE por defecto y se pueden reasignar (Opciones › Teclas); `keys` muestra
+# ambos perfiles cuando difieren ("cuadrícula" / "clásico").
+# context: start, villager, idle, house, lure, farm, age, drop_site, scout, groups
+schema_version = 1
+
+[[tip]]
+id = "queue_villagers"
+context = ["start", "villager"]
+keys = ["H", "Q (cuadrícula) / C (clásico)"]
+keys_en = ["H", "Q (grid) / C (classic)"]
+es = "Selecciona el CU con H y pon 2 o 3 aldeanos en cola: así el CU nunca para mientras haces otra cosa. IdleZero cuenta cada segundo de CU inactivo."
+en = "Select the TC with H and queue 2 or 3 villagers: the TC never stops while you do something else. IdleZero counts every second of idle TC."
+
+[[tip]]
+id = "idle_villager"
+context = ["idle", "start"]
+keys = ["."]
+es = "La tecla . (punto) salta al siguiente aldeano ocioso. Revisa el ícono de ociosos cada pocos segundos."
+en = "The . (period) key jumps to the next idle villager. Check the idle icon every few seconds."
+
+[[tip]]
+id = "houses_shift"
+context = ["house"]
+keys = ["Mayús + clic"]
+keys_en = ["Shift + click"]
+es = "Mantén Mayús al colocar casas para poner varias seguidas. Construye la siguiente casa antes de llegar al tope de población, no cuando ya estás bloqueado."
+en = "Hold Shift while placing houses to place several in a row. Build the next house before hitting the population cap, not when you are already blocked."
+
+[[tip]]
+id = "lure_boar"
+context = ["lure"]
+keys = []
+es = "Ataca al jabalí con un solo aldeano y vuelve corriendo al CU: los demás lo recolectan bajo el CU (casi sin caminar). Cuando le queden ~100 de comida, ve por el segundo."
+en = "Hit the boar with a single villager and run back to the TC: the others gather it under the TC (almost no walking). When ~100 food is left, go for the second one."
+
+[[tip]]
+id = "farm_reseed"
+context = ["farm"]
+keys = []
+es = "Las granjas se resiembran solas si tienes 60 de madera: guarda madera para no dejar granjeros parados."
+en = "Farms reseed automatically if you have 60 wood: keep wood in stock so farmers never stand idle."
+
+[[tip]]
+id = "age_up"
+context = ["age"]
+keys = ["H"]
+es = "Antes del clic de edad ten los 2 edificios que pide (molino y campamento para Feudal; p. ej. herrería y mercado para Castillos). El CU deja de hacer aldeanos mientras investiga la edad."
+en = "Before the age-up click have the 2 buildings it requires (mill and camp for Feudal; e.g. blacksmith and market for Castle). The TC stops making villagers while it researches the age."
+
+[[tip]]
+id = "drop_sites"
+context = ["drop_site"]
+keys = []
+es = "Pega el campamento al bosque y al oro: cada casilla de caminata es tiempo perdido en cada viaje (compáralo en la Calculadora con y sin campamento)."
+en = "Put the camp right next to the woodline and gold: every tile of walking is time lost on every trip (compare it in the Calculator with and without a camp)."
+
+[[tip]]
+id = "scout_group"
+context = ["start", "scout"]
+keys = ["Ctrl + 1", "Mayús + clic derecho"]
+keys_en = ["Ctrl + 1", "Shift + right click"]
+es = "Pon al explorador en un grupo con Ctrl + 1 y, con Mayús + clic derecho, marca varios puntos alrededor de tu base: explora solo mientras atiendes la economía y encuentra antes las ovejas, que IdleZero espera a los 2:30."
+en = "Put the scout in a group with Ctrl + 1 and, with Shift + right click, set several waypoints around your base: it scouts by itself while you handle the economy and finds the sheep sooner, which IdleZero expects at 2:30."
+
+[[tip]]
+id = "control_groups"
+context = ["groups", "start"]
+keys = ["Ctrl + número", "número ×2"]
+keys_en = ["Ctrl + number", "number ×2"]
+es = "Ctrl + un número guarda la selección como grupo; pulsar el número la selecciona y pulsarlo dos veces centra la cámara en ella."
+en = "Ctrl + a number saves the selection as a group; pressing the number selects it and pressing it twice centers the camera on it."

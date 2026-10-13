@@ -3,7 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { Labels } from "./labels";
 import { MapLayout, tasksAt } from "./layout";
 import { Selection } from "./EconomyMap";
-import { Age, Goal, OptResult, Plan, RESOURCES, Timeline, WhatIf, clock } from "./types";
+import { Age, Goal, OptResult, Plan, RESOURCES, Timeline, Tip, WhatIf, clock } from "./types";
+import { TipCard } from "./Dashboard";
 
 const AGES: Age[] = ["Feudal", "Castle", "Imperial"];
 
@@ -130,12 +131,23 @@ function Moment({ t, timeline, layout, labels }: { t: number | null; timeline: T
   );
 }
 
-function VillagerDetail({ id, result, timeline, layout, labels }: { id: number; result: OptResult; timeline: Timeline; layout: MapLayout; labels: Labels }) {
+function tipsFor(tips: Tip[], ctx: Set<string>): Tip[] {
+  return tips.filter((t) => t.context.some((c) => ctx.has(c))).slice(0, 2);
+}
+
+function VillagerDetail({ id, result, timeline, layout, labels, tips }: { id: number; result: OptResult; timeline: Timeline; layout: MapLayout; labels: Labels; tips: Tip[] }) {
   const L = labels.ui;
   const v = timeline.villagers.find((x) => x.id === id);
   const segs = layout.segments.filter((s) => s.villager === id);
   const node = result.tree.find((n) => n.villager === id);
   if (!v) return null;
+  const ctx = new Set<string>(["villager"]);
+  for (const sg of segs) {
+    if (sg.task.kind === "lure") ctx.add("lure");
+    if (sg.task.kind === "idle") ctx.add("idle");
+    if (sg.task.kind === "build") ctx.add(sg.task.building === "house" ? "house" : sg.task.building === "farm" ? "farm" : "drop_site");
+  }
+  const vtips = tipsFor(tips, ctx);
   return (
     <section>
       <h3>
@@ -179,11 +191,19 @@ function VillagerDetail({ id, result, timeline, layout, labels }: { id: number; 
           </ul>
         </>
       )}
+      {vtips.length > 0 && (
+        <>
+          <h4>{L.tipsForThis}</h4>
+          {vtips.map((t) => (
+            <TipCard key={t.id} tip={t} />
+          ))}
+        </>
+      )}
     </section>
   );
 }
 
-function BuildingDetail({ placement, layout, labels, map, goal, orderToml, civ }: { placement: number; layout: MapLayout; labels: Labels; map: string; goal: Goal; orderToml: string; civ: string }) {
+function BuildingDetail({ placement, layout, labels, map, goal, orderToml, civ, tips }: { placement: number; layout: MapLayout; labels: Labels; map: string; goal: Goal; orderToml: string; civ: string; tips: Tip[] }) {
   const L = labels.ui;
   const b = layout.buildings.find((x) => x.placement === placement);
   const [whatIf, setWhatIf] = useState<WhatIf[] | null>(null);
@@ -234,6 +254,9 @@ function BuildingDetail({ placement, layout, labels, map, goal, orderToml, civ }
           </tbody>
         </table>
       )}
+      {tipsFor(tips, new Set([b.building === "house" ? "house" : "drop_site"])).map((t) => (
+        <TipCard key={t.id} tip={t} />
+      ))}
     </section>
   );
 }
@@ -251,6 +274,7 @@ export default function SidePanel(props: {
   goal: Goal;
   plan: Plan;
   civ: string;
+  tips: Tip[];
   planBusy: boolean;
   onPlan: (p: Plan) => void;
 }) {
@@ -259,9 +283,9 @@ export default function SidePanel(props: {
   const best = result.best.time;
   return (
     <aside className="side">
-      {selected?.kind === "villager" && <VillagerDetail id={selected.id} result={result} timeline={timeline} layout={layout} labels={labels} />}
+      {selected?.kind === "villager" && <VillagerDetail id={selected.id} result={result} timeline={timeline} layout={layout} labels={labels} tips={props.tips} />}
       {selected?.kind === "building" && props.plan === result.best && (
-        <BuildingDetail placement={selected.placement} layout={layout} labels={labels} map={props.map} goal={props.goal} orderToml={result.order_toml} civ={props.civ} />
+        <BuildingDetail placement={selected.placement} layout={layout} labels={labels} map={props.map} goal={props.goal} orderToml={result.order_toml} civ={props.civ} tips={props.tips} />
       )}
       {!selected && (
         <section>

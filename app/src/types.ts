@@ -48,6 +48,15 @@ export interface AppInfo {
   langs: Named[];
   labels: Record<string, string>;
   catalog: { units: Entity[]; techs: Entity[]; buildings: Entity[] };
+  tips: Tip[];
+}
+
+export interface Tip {
+  id: string;
+  /** Momentos de la orden a los que aplica: start, villager, idle, house, lure, farm, age, drop_site, scout, groups. */
+  context: string[];
+  keys: string[];
+  text: string;
 }
 
 export interface Choice {

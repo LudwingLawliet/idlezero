@@ -74,6 +74,16 @@ struct AppInfo {
     /// Todos los textos del idioma ("seccion.clave" -> texto).
     labels: BTreeMap<String, String>,
     catalog: Catalog,
+    tips: Vec<TipView>,
+}
+
+/// Consejo de juego (teclas y buenas prácticas) en el idioma pedido.
+#[derive(Serialize)]
+struct TipView {
+    id: String,
+    context: Vec<String>,
+    keys: Vec<String>,
+    text: String,
 }
 
 #[tauri::command]
@@ -167,6 +177,19 @@ fn app_info(lang: String) -> AppInfo {
         langs,
         labels: l.all(),
         catalog: Catalog { units, techs, buildings },
+        tips: b
+            .tips
+            .iter()
+            .map(|t| {
+                let en = lang != "es";
+                TipView {
+                    id: t.id.clone(),
+                    context: t.context.clone(),
+                    keys: if en && !t.keys_en.is_empty() { t.keys_en.clone() } else { t.keys.clone() },
+                    text: if en { t.en.clone() } else { t.es.clone() },
+                }
+            })
+            .collect(),
     }
 }
 
