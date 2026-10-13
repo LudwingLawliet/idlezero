@@ -1,0 +1,44 @@
+# Laboratorio (nivel 0): sin ovejas, jabalíes, bayas ni ciervos.
+# Bosque, oro y piedra infinitos a 3 casillas fijas de su punto de entrega;
+# granjas como única comida tras la reserva inicial. Sirve para probar la
+# matemática pura sin ruido.
+name = "Laboratorio"
+level = 0
+
+[start]
+villagers = 3
+scouts = 1
+town_centers = 1
+# Inicio estándar de Random Map en AoE2 DE.
+source = "https://ageofempires.fandom.com/wiki/Resources_(Age_of_Empires_II)"
+resources = { food = 200, wood = 200, gold = 100, stone = 200 }
+
+[[source]]
+id = "forest"
+task = "lumberjack"
+distance_tiles = 3.0
+approximate = false
+note = "Valor fijo del laboratorio, no medido."
+
+[[source]]
+id = "gold"
+task = "gold_miner"
+distance_tiles = 3.0
+approximate = false
+note = "Valor fijo del laboratorio, no medido."
+
+[[source]]
+id = "stone"
+task = "stone_miner"
+distance_tiles = 3.0
+approximate = false
+note = "Valor fijo del laboratorio, no medido."
+
+[[source]]
+id = "farms"
+task = "farmer"
+amount = 175          # comida por granja en AoE2 DE, sin mejoras
+distance_tiles = 0.0  # la tasa de granjero ya es efectiva
+drop_site = 68        # requiere molino o CU
+approximate = true
+note = "Comida por granja: https://ageofempires.fandom.com/wiki/Farm_(Age_of_Empires_II)"

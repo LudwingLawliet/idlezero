@@ -1,0 +1,76 @@
+# Tasas de recolección y reglas de aldeano para el escenario neutro.
+# No vienen en los datos del juego: son mediciones de la comunidad.
+# Todo valor `approximate = true` se muestra como aproximado en la interfaz
+# hasta validarlo contra partidas reales (tests/validation/).
+schema_version = 1
+
+[carry]
+default = 10
+hunting = 35
+source = "https://ageofempires.fandom.com/wiki/Villager_(Age_of_Empires_II)"
+approximate = false
+
+# Tiempo con n constructores = 3t / (n + 2)
+[build]
+numerator = 3
+offset = 2
+source = "https://ageofempires.fandom.com/wiki/Villager_(Age_of_Empires_II)"
+approximate = false
+
+# Tasas base sin mejoras, en recursos por segundo, sin contar la caminata.
+[[task]]
+id = "fisherman"
+resource = "food"
+rate = 0.43
+source = "https://ageofempires.fandom.com/wiki/Villager_(Age_of_Empires_II)"
+approximate = true
+
+[[task]]
+id = "hunter"   # jabalí y ciervo
+resource = "food"
+rate = 0.41
+hunting = true
+source = "https://ageofempires.fandom.com/wiki/Villager_(Age_of_Empires_II)"
+approximate = true
+
+[[task]]
+id = "shepherd"
+resource = "food"
+rate = 0.33
+source = "https://ageofempires.fandom.com/wiki/Villager_(Age_of_Empires_II)"
+approximate = true
+
+[[task]]
+id = "farmer"   # tasa efectiva, ya incluye la caminata corta al molino/CU
+resource = "food"
+rate = 0.32
+source = "https://ageofempires.fandom.com/wiki/Villager_(Age_of_Empires_II)"
+approximate = true
+
+[[task]]
+id = "forager"  # bayas
+resource = "food"
+rate = 0.31
+source = "https://ageofempires.fandom.com/wiki/Villager_(Age_of_Empires_II)"
+approximate = true
+
+[[task]]
+id = "lumberjack"
+resource = "wood"
+rate = 0.39
+source = "https://ageofempires.fandom.com/wiki/Villager_(Age_of_Empires_II)"
+approximate = true
+
+[[task]]
+id = "gold_miner"
+resource = "gold"
+rate = 0.38
+source = "https://ageofempires.fandom.com/wiki/Villager_(Age_of_Empires_II)"
+approximate = true
+
+[[task]]
+id = "stone_miner"
+resource = "stone"
+rate = 0.36
+source = "https://ageofempires.fandom.com/wiki/Villager_(Age_of_Empires_II)"
+approximate = true

@@ -1,0 +1,107 @@
+# Arabia neutra (nivel 1): mapa abierto y plano con los recursos estándar de
+# inicio. Sin elevación, sin enemigos, sin bonos de civilización.
+# Cantidades según la Wiki de AoE; distancias = promedio estimado en casillas.
+# Todas las distancias son aproximadas hasta validarlas en partida.
+name = "Arabia neutra"
+level = 1
+
+[start]
+villagers = 3
+scouts = 1
+town_centers = 1
+source = "https://ageofempires.fandom.com/wiki/Resources_(Age_of_Empires_II)"
+resources = { food = 200, wood = 200, gold = 100, stone = 200 }
+
+[[source]]
+id = "sheep"
+task = "shepherd"
+count = 8             # 4 junto al CU + 4 que encuentra el explorador
+amount = 100
+distance_tiles = 1.0  # se recolectan bajo el CU
+approximate = true
+
+[[source]]
+id = "boar"
+task = "hunter"
+count = 2
+amount = 340
+distance_tiles = 1.0  # atraído al CU
+approximate = true
+
+[[source]]
+id = "berries"
+task = "forager"
+count = 6
+amount = 125
+distance_tiles = 8.0
+distance_with_drop_site = 1.0
+drop_site = 68        # molino
+approximate = true
+
+[[source]]
+id = "deer"
+task = "hunter"
+count = 3
+amount = 100
+distance_tiles = 10.0
+distance_with_drop_site = 1.5
+drop_site = 68        # molino junto a los ciervos (o empujarlos al CU)
+approximate = true
+
+[[source]]
+id = "forest"
+task = "lumberjack"
+distance_tiles = 12.0
+distance_with_drop_site = 2.0
+drop_site = 562       # campamento maderero
+approximate = true
+note = "Bosque tratado como infinito; la distancia crece al talarlo (fase 2)."
+
+[[source]]
+id = "gold_main"
+task = "gold_miner"
+count = 7
+amount = 800
+distance_tiles = 12.0
+distance_with_drop_site = 1.0
+drop_site = 584       # campamento minero
+approximate = true
+
+[[source]]
+id = "gold_secondary"
+task = "gold_miner"
+count = 4
+amount = 800
+distance_tiles = 20.0
+distance_with_drop_site = 1.0
+drop_site = 584
+approximate = true
+
+[[source]]
+id = "stone_main"
+task = "stone_miner"
+count = 5
+amount = 350
+distance_tiles = 14.0
+distance_with_drop_site = 1.0
+drop_site = 584
+approximate = true
+
+[[source]]
+id = "stone_secondary"
+task = "stone_miner"
+count = 4
+amount = 350
+distance_tiles = 20.0
+distance_with_drop_site = 1.0
+drop_site = 584
+approximate = true
+
+[[source]]
+id = "farms"
+task = "farmer"
+amount = 175
+distance_tiles = 0.0
+drop_site = 68
+approximate = true
+note = "Comida por granja: https://ageofempires.fandom.com/wiki/Farm_(Age_of_Empires_II)"

@@ -1,0 +1,8 @@
+[package]
+name = "aoe2-battle"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+aoe2-data.workspace = true

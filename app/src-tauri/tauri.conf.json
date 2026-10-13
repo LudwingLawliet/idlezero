@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AoE2 Optimizer",
+  "version": "0.0.1",
+  "identifier": "io.github.aoe2optimizer",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "AoE2 Optimizer",
+        "width": 1200,
+        "height": 800
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "appimage",
+      "deb",
+      "rpm",
+      "msi",
+      "nsis"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Utility",
+    "shortDescription": "Órdenes de construcción óptimas para Age of Empires II DE",
+    "copyright": "Age of Empires II © Microsoft Corporation. Not endorsed by or affiliated with Microsoft."
+  },
+  "mainBinaryName": "aoe2-optimizer"
+}

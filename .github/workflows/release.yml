@@ -1,0 +1,86 @@
+# Compila los instaladores de Linux y Windows al crear una etiqueta v*
+# y los sube a un borrador de GitHub Release junto con sus hashes SHA-256.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencias de sistema (Tauri)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+      - name: Frontend de la app (requerido por tauri::generate_context)
+        working-directory: app
+        run: npm ci && npm run build
+      - run: cargo test --workspace --locked
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependencias de sistema (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf rpm
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+
+      - name: Instalar dependencias del frontend
+        working-directory: app
+        run: npm ci
+
+      - name: Compilar y publicar instaladores
+        id: tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          tagName: ${{ github.ref_name }}
+          releaseName: AoE2 Optimizer ${{ github.ref_name }}
+          releaseBody: |
+            Descarga el instalador de tu sistema. Verifica el hash con los archivos SHA256SUMS-*.txt.
+            Age of Empires II © Microsoft Corporation. AoE2 Optimizer was created under Microsoft's "Game Content Usage Rules" using assets from Age of Empires II, and it is not endorsed by or affiliated with Microsoft.
+          releaseDraft: true
+          prerelease: false
+
+      - name: Publicar hashes SHA-256
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACTS: ${{ steps.tauri.outputs.artifactPaths }}
+        run: |
+          out="SHA256SUMS-${RUNNER_OS}.txt"
+          echo "$ARTIFACTS" | jq -r '.[]' | while read -r f; do
+            f="${f//\\//}"
+            [ -f "$f" ] && (cd "$(dirname "$f")" && sha256sum "$(basename "$f")")
+          done > "$out"
+          cat "$out"
+          gh release upload "$GITHUB_REF_NAME" "$out" --clobber
