@@ -1,6 +1,6 @@
 [package]
-name = "aoe2-optimizer"
-description = "AoE2 Optimizer"
+name = "idlezero"
+description = "IdleZero"
 authors = ["LudwingVanCat"]
 version.workspace = true
 edition.workspace = true
@@ -9,7 +9,7 @@ license.workspace = true
 [lib]
 # El sufijo `_lib` evita choques de nombre con el binario en Windows
 # (https://github.com/rust-lang/cargo/issues/8519).
-name = "aoe2_optimizer_lib"
+name = "idlezero_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

@@ -22,8 +22,8 @@ function App() {
 
   return (
     <main className="container">
-      <h1>AoE2 Optimizer</h1>
-      <p>Órdenes de construcción óptimas, aldeano por aldeano.</p>
+      <h1>IdleZero</h1>
+      <p>Cero segundos de CU inactivo: órdenes de construcción óptimas para Age of Empires II, aldeano por aldeano.</p>
 
       {error && <p className="error">No se pudieron cargar los datos: {error}</p>}
       {info && (
@@ -34,7 +34,7 @@ function App() {
       )}
 
       <footer className="legal">
-        Age of Empires II © Microsoft Corporation. AoE2 Optimizer was created under
+        Age of Empires II © Microsoft Corporation. IdleZero was created under
         Microsoft's "<a href={RULES_URL} target="_blank" rel="noreferrer">Game Content Usage Rules</a>"
         using assets from Age of Empires II, and it is not endorsed by or affiliated with Microsoft.
       </footer>

@@ -71,18 +71,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aoe2-optimizer"
-version = "0.0.1"
-dependencies = [
- "aoe2-data",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
-]
-
-[[package]]
 name = "aoe2-sim"
 version = "0.0.1"
 dependencies = [
@@ -1687,6 +1675,18 @@ name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
+
+[[package]]
+name = "idlezero"
+version = "0.0.1"
+dependencies = [
+ "aoe2-data",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+]
 
 [[package]]
 name = "idna"

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "AoE2 Optimizer",
+  "productName": "IdleZero",
   "version": "0.0.1",
-  "identifier": "io.github.aoe2optimizer",
+  "identifier": "io.github.idlezero",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "AoE2 Optimizer",
+        "title": "IdleZero",
         "width": 1200,
         "height": 800
       }
@@ -41,5 +41,5 @@
     "shortDescription": "Órdenes de construcción óptimas para Age of Empires II DE",
     "copyright": "Age of Empires II © Microsoft Corporation. Not endorsed by or affiliated with Microsoft."
   },
-  "mainBinaryName": "aoe2-optimizer"
+  "mainBinaryName": "idlezero"
 }

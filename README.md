@@ -1,4 +1,4 @@
-# AoE2 Optimizer
+# IdleZero
 
 App de escritorio gratuita (Linux y Windows) que calcula, aldeano por aldeano, la ruta más rápida para cumplir un objetivo en Age of Empires II: Definitive Edition, y la muestra como un mapa de decisiones.
 
@@ -37,6 +37,6 @@ Publicar una versión: `git tag v0.x.y && git push --tags`. GitHub Actions compi
 
 ## Aviso legal
 
-Age of Empires II © Microsoft Corporation. AoE2 Optimizer was created under Microsoft's "[Game Content Usage Rules](https://www.xbox.com/en-US/developers/rules)" using assets from Age of Empires II, and it is not endorsed by or affiliated with Microsoft.
+Age of Empires II © Microsoft Corporation. IdleZero was created under Microsoft's "[Game Content Usage Rules](https://www.xbox.com/en-US/developers/rules)" using assets from Age of Empires II, and it is not endorsed by or affiliated with Microsoft.
 
 El código de este repositorio se publica bajo licencia MIT.
