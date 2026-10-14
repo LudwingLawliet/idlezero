@@ -49,7 +49,7 @@ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
 name = "aoe2-battle"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "aoe2-data",
  "serde",
@@ -58,7 +58,7 @@ dependencies = [
 
 [[package]]
 name = "aoe2-data"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -67,7 +67,7 @@ dependencies = [
 
 [[package]]
 name = "aoe2-opt"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "aoe2-data",
  "aoe2-sim",
@@ -78,7 +78,7 @@ dependencies = [
 
 [[package]]
 name = "aoe2-sim"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "aoe2-data",
  "serde",
@@ -1687,7 +1687,7 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "idlezero"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "aoe2-battle",
  "aoe2-data",
@@ -1724,7 +1724,7 @@ dependencies = [
 
 [[package]]
 name = "import"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "aoe2-data",
  "serde",

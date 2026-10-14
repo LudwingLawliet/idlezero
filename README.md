@@ -24,7 +24,7 @@ Los instaladores están en [Releases](../../releases/latest):
 | Fedora, openSUSE | `.rpm` (`sudo dnf install ./archivo.rpm`) |
 | Otras distribuciones Linux | `.AppImage` (dar permiso de ejecución y abrir) |
 
-Cada versión incluye `SHA256SUMS-*.txt` para verificar la descarga (`sha256sum -c SHA256SUMS-Linux.txt --ignore-missing`). En Windows puede aparecer un aviso porque el instalador no está firmado.
+Cada versión incluye `SHA256SUMS-*.txt` para verificar la descarga (`sha256sum -c SHA256SUMS-Linux.txt --ignore-missing`). En Windows, SmartScreen puede mostrar un aviso porque el instalador aún no está firmado digitalmente; tras comprobar el hash, se puede continuar con *Más información → Ejecutar de todas formas*.
 
 ## Uso
 
@@ -81,3 +81,9 @@ Datos e íconos del juego: [SiegeEngineers/aoe2techtree](https://github.com/Sieg
 Age of Empires II © Microsoft Corporation. IdleZero was created under Microsoft's "[Game Content Usage Rules](https://www.xbox.com/en-US/developers/rules)" using assets from Age of Empires II, and it is not endorsed by or affiliated with Microsoft.
 
 El código está bajo [licencia MIT](LICENSE); el contenido del juego no.
+
+## Apoyar el proyecto
+
+IdleZero es gratis y lo seguirá siendo. Si te resultó útil, una estrella en GitHub ayuda, y si quieres invitar un café, de la cantidad que quieras:
+
+<a href="https://ko-fi.com/ludwingvancat"><img src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" alt="Invítame un café en Ko-fi" height="36"></a>

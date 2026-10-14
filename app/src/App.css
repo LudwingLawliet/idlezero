@@ -2552,3 +2552,7 @@ button.big {
     animation: none;
   }
 }
+
+.legal .kofi {
+  white-space: nowrap;
+}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { Age, AppInfo, CivView, Entity, Goal, OptimizeView, Plan, PlanView } from "./types";
 import { makeLabels } from "./labels";
 import { layoutMap } from "./layout";
@@ -16,6 +17,13 @@ import { goalProgress } from "./goalProgress";
 import "./App.css";
 
 const RULES_URL = "https://www.xbox.com/en-US/developers/rules";
+const KOFI_URL = "https://ko-fi.com/ludwingvancat";
+
+/** Abre un enlace en el navegador del sistema (no dentro de la app). */
+function openExternal(e: React.MouseEvent, url: string) {
+  e.preventDefault();
+  openUrl(url).catch(() => window.open(url, "_blank"));
+}
 
 function stored<T>(key: string, fallback: T): T {
   try {
@@ -317,10 +325,13 @@ export default function App() {
 
       <footer className="legal">
         Age of Empires II © Microsoft Corporation. IdleZero was created under Microsoft's "
-        <a href={RULES_URL} target="_blank" rel="noreferrer">
+        <a href={RULES_URL} onClick={(e) => openExternal(e, RULES_URL)}>
           Game Content Usage Rules
         </a>
-        " using assets from Age of Empires II, and it is not endorsed by or affiliated with Microsoft. · v{info.version}
+        " using assets from Age of Empires II, and it is not endorsed by or affiliated with Microsoft. · v{info.version} ·{" "}
+        <a href={KOFI_URL} onClick={(e) => openExternal(e, KOFI_URL)} className="kofi">
+          ☕ {L.supportKofi}
+        </a>
       </footer>
     </div>
   );
