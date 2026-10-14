@@ -15,14 +15,17 @@ El resultado se muestra como un mapa que se puede recorrer: quién recolecta qu�
 
 ## Instalación
 
-Los instaladores están en [Releases](../../releases/latest):
+Los archivos están en [Releases](../../releases/latest):
 
 | Sistema | Archivo |
 | --- | --- |
-| Windows 10/11 | `.exe` o `.msi` |
+| Windows 10/11, sin instalar | `_portable.exe`: se descarga y se abre con doble clic |
+| Windows 10/11, instalado | `-setup.exe` o `.msi` (crea acceso directo en el menú Inicio) |
 | Ubuntu, Debian | `.deb` (`sudo apt install ./archivo.deb`) |
 | Fedora, openSUSE | `.rpm` (`sudo dnf install ./archivo.rpm`) |
 | Otras distribuciones Linux | `.AppImage` (dar permiso de ejecución y abrir) |
+
+La versión portable no instala nada: solo guarda tus preferencias en `%LOCALAPPDATA%\io.github.idlezero`. Usa WebView2, que Windows 10 y 11 ya incluyen.
 
 Cada versión incluye `SHA256SUMS-*.txt` para verificar la descarga (`sha256sum -c SHA256SUMS-Linux.txt --ignore-missing`). En Windows, SmartScreen puede mostrar un aviso porque el instalador aún no está firmado digitalmente; tras comprobar el hash, se puede continuar con *Más información → Ejecutar de todas formas*.
 

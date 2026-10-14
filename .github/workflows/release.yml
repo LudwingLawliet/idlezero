@@ -82,6 +82,18 @@ jobs:
           $p = Start-Process -FilePath target\release\idlezero.exe -ArgumentList '--selftest' -Wait -PassThru -NoNewWindow
           if ($p.ExitCode -ne 0) { Write-Error "selftest falló: $($p.ExitCode)"; exit 1 }
 
+      - name: Versión portable (Windows)
+        if: runner.os == 'Windows' && startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # El mismo idlezero.exe sin instalador: datos e interfaz van dentro;
+        # solo usa WebView2, que ya trae Windows 10/11.
+        run: |
+          mkdir -p portable
+          cp target/release/idlezero.exe "portable/IdleZero_${GITHUB_REF_NAME#v}_x64_portable.exe"
+          gh release upload "$GITHUB_REF_NAME" portable/*.exe --clobber
+
       - name: Publicar hashes SHA-256
         if: startsWith(github.ref, 'refs/tags/')
         shell: bash
@@ -97,5 +109,6 @@ jobs:
               (cd "$(dirname "$f")" && sha256sum "$(basename "$f")")
             fi
           done > "$out"
+          if [ -d portable ]; then (cd portable && sha256sum *.exe) >> "$out"; fi
           cat "$out"
           gh release upload "$GITHUB_REF_NAME" "$out" --clobber
